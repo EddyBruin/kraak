@@ -5,137 +5,314 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>De Kraak van de Eeuw</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #121212; --surface: #1e1e1e; --primary: #03dac6; 
-            --error: #cf6679; --text: #e0e0e0; --muted: #9e9e9e;
+            --bg: #0a0908;            /* betonvloer van de kluis */
+            --bg-deep: #050403;
+            --surface: #1b1712;       /* dossiermap-bruin/zwart */
+            --surface-raised: #241f18;
+            --primary: #c9a034;       /* goud - de buit */
+            --primary-dim: #8a6f28;
+            --resistance: #b3212e;    /* rood overall */
+            --resistance-dark: #6e131c;
+            --error: #ff4b3e;         /* alarm rood */
+            --text: #ece3d2;          /* dossierpapier */
+            --muted: #8d8375;
+            --line: #33291c;
         }
+        * { box-sizing: border-box; }
         body {
             background-color: var(--bg); color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: 'Oswald', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             margin: 0; padding: 16px;
             overscroll-behavior-y: contain;
             display: flex;
             flex-direction: column;
             min-height: 95vh;
             position: relative;
+            background-image:
+                radial-gradient(ellipse at 20% -10%, rgba(179,33,46,0.14), transparent 45%),
+                radial-gradient(ellipse at 90% 110%, rgba(201,160,52,0.10), transparent 50%),
+                repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+            letter-spacing: 0.02em;
+        }
+        /* subtiele bewakingscamera scanlijn over de hele pagina */
+        body::before {
+            content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 5000;
+            background: linear-gradient(180deg, transparent 0%, rgba(201,160,52,0.05) 50%, transparent 100%);
+            background-size: 100% 6px;
+            opacity: 0.5;
+            mix-blend-mode: overlay;
         }
         .content-wrapper {
             flex: 1;
             width: 100%;
+            position: relative;
+            z-index: 1;
         }
         .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 500px; margin: 0 auto; text-align: center; }
-        .screen.active { display: flex; }
-        
+        .screen.active { display: flex; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 { font-family: 'Bebas Neue', 'Oswald', sans-serif; letter-spacing: 0.06em; }
+
         /* GECENTREERDE TIMER HEADER */
         .header { 
             width: 100%; 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            border-bottom: 1px solid #333; 
+            border-bottom: 2px solid var(--primary-dim); 
             padding-bottom: 12px; 
             margin-bottom: 20px; 
             position: relative;
         }
-        .header h2 { margin: 0; font-size: 1.2rem; color: var(--primary); z-index: 1; }
+        .header h2 { margin: 0; font-size: 1.6rem; color: var(--primary); z-index: 1; text-shadow: 0 0 12px rgba(201,160,52,0.35); }
+        .header-mask { position: absolute; left: 0; top: -6px; opacity: 0.9; }
+        .header h2 { padding-left: 42px; }
         .time { 
-            font-family: monospace; 
-            font-size: 1.2rem; 
+            font-family: 'Share Tech Mono', monospace; 
+            font-size: 1.3rem; 
             font-weight: bold; 
             color: var(--error); 
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
             z-index: 1;
+            background: var(--bg-deep);
+            border: 1px solid var(--resistance-dark);
+            padding: 4px 12px;
+            border-radius: 4px;
+            letter-spacing: 0.15em;
+            box-shadow: 0 0 10px rgba(255,75,62,0.35), inset 0 0 6px rgba(255,75,62,0.25);
+            animation: tickGlow 1.6s ease-in-out infinite;
+        }
+        @keyframes tickGlow {
+            0%, 100% { box-shadow: 0 0 10px rgba(255,75,62,0.35), inset 0 0 6px rgba(255,75,62,0.25); }
+            50% { box-shadow: 0 0 16px rgba(255,75,62,0.6), inset 0 0 8px rgba(255,75,62,0.4); }
         }
         
-        button { background: var(--primary); color: #000; border: none; padding: 14px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 12px; }
-        button.secondary { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+        button {
+            background: linear-gradient(180deg, #d9b23f, var(--primary) 55%, var(--primary-dim));
+            color: #1a1305; border: none; border-bottom: 3px solid #6e5417;
+            padding: 14px; font-size: 16px; border-radius: 6px; cursor: pointer;
+            font-weight: 700; width: 100%; margin-bottom: 12px;
+            font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.08em;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.4), 0 4px 10px rgba(0,0,0,0.5);
+            transition: transform 0.08s ease, box-shadow 0.08s ease;
+            position: relative;
+        }
+        button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.4); }
+        button.secondary {
+            background: transparent; color: var(--primary); border: 2px solid var(--primary-dim);
+            border-bottom: 2px solid var(--primary-dim); box-shadow: none;
+        }
+        button.secondary:active { transform: translateY(1px); }
         
-        input, select { width: 100%; padding: 14px; margin-bottom: 16px; background: var(--surface); color: white; border: 1px solid #333; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        input, select {
+            width: 100%; padding: 14px; margin-bottom: 16px; background: var(--surface); color: var(--text);
+            border: 1px solid var(--line); border-left: 3px solid var(--resistance); border-radius: 4px;
+            font-size: 16px; box-sizing: border-box; font-family: 'Oswald', sans-serif;
+        }
+        input::placeholder { color: var(--muted); }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(201,160,52,0.2); }
         
-        .card { background: var(--surface); padding: 16px; border-radius: 8px; width: 100%; box-sizing: border-box; margin-bottom: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align: left;}
-        .card h3 { margin-top: 0; color: var(--primary); }
+        .card {
+            background: var(--surface);
+            background-image: linear-gradient(135deg, rgba(201,160,52,0.05), transparent 40%);
+            padding: 16px; border-radius: 4px; width: 100%; box-sizing: border-box; margin-bottom: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            text-align: left;
+            border: 1px solid var(--line);
+            border-left: 4px solid var(--resistance);
+            position: relative;
+        }
+        .card h3 { margin-top: 0; color: var(--primary); font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; font-size: 1.4rem; }
         
         ul { list-style: none; padding: 0; margin: 0; width: 100%; }
-        li { background: #2c2c2c; padding: 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; font-weight: 500; cursor: pointer; transition: background 0.2s; }
-        li:active { background: #3d3d3d; }
+        li {
+            background: var(--surface-raised); padding: 12px 14px; border-radius: 4px; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center; font-weight: 500; cursor: pointer;
+            transition: background 0.2s, transform 0.1s; border: 1px solid var(--line); border-left: 3px solid var(--primary-dim);
+        }
+        li:active { background: #2f281c; transform: scale(0.99); }
         .click-hint { font-size: 0.8rem; color: var(--primary); opacity: 0.7; }
         
-        #reader { width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 16px; transform: translateZ(0); }
+        #reader { width: 100%; background: #000; border-radius: 10px; overflow: hidden; margin-bottom: 16px; transform: translateZ(0); border: 2px solid var(--primary-dim); }
         
         /* Camera-upload verbergen */
         #reader__dashboard_section_swaplink, #reader__camera_selection + div, #reader input[type="file"], #reader button[id*="scan-image"] { display: none !important; }
 
-        /* STATUS INDICATOR */
+        /* STATUS INDICATOR ALS BEWAKINGSLAMPJE */
         .status-dot {
-            width: 12px; height: 12px; background-color: var(--error); border-radius: 50%;
+            width: 14px; height: 14px; background-color: var(--error); border-radius: 50%;
             position: fixed; top: 16px; right: 16px; z-index: 9999;
-            transition: background-color 0.3s ease; box-shadow: 0 0 4px rgba(0,0,0,0.5);
+            transition: background-color 0.3s ease; box-shadow: 0 0 6px rgba(255,75,62,0.8);
+            border: 2px solid rgba(0,0,0,0.6);
         }
-        .status-dot.connected { background-color: var(--primary); animation: pulse 2s infinite; }
+        .status-dot.connected { background-color: var(--primary); box-shadow: 0 0 6px rgba(201,160,52,0.8); animation: pulse 2s infinite; }
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(3, 218, 198, 0.7); }
-            70% { box-shadow: 0 0 0 8px rgba(3, 218, 198, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(3, 218, 198, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(201,160,52,0.6); }
+            70% { box-shadow: 0 0 0 9px rgba(201,160,52,0); }
+            100% { box-shadow: 0 0 0 0 rgba(201,160,52,0); }
         }
 
         /* MODAL POPUP */
         .modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center;
-            padding: 16px; box-sizing: border-box;
+            background: rgba(4,3,2,0.85); z-index: 10000; justify-content: center; align-items: center;
+            padding: 16px; box-sizing: border-box; backdrop-filter: blur(2px);
         }
-        .modal.active { display: flex; }
+        .modal.active { display: flex; animation: fadeIn 0.25s ease; }
         .modal-content {
-            background: var(--surface); padding: 24px; border-radius: 12px; 
-            width: 100%; max-width: 400px; text-align: left; box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            background: var(--surface); padding: 24px; border-radius: 6px; 
+            width: 100%; max-width: 400px; text-align: left; box-shadow: 0 12px 30px rgba(0,0,0,0.7);
+            border: 1px solid var(--line); border-top: 4px solid var(--primary);
+            position: relative;
         }
-        .modal-content h3 { margin-top: 0; color: var(--primary); margin-bottom: 12px; }
+        .modal-content h3 { margin-top: 0; color: var(--primary); margin-bottom: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 0.05em; }
         .modal-content p { line-height: 1.5; margin-bottom: 24px; white-space: pre-line; }
 
         .version-footer {
             text-align: center; font-size: 0.75rem; color: var(--muted);
-            margin-top: 40px; padding-top: 10px; border-top: 1px solid #222;
+            margin-top: 40px; padding-top: 10px; border-top: 1px solid var(--line);
             width: 100%; max-width: 500px; margin-left: auto; margin-right: auto;
+            text-transform: uppercase; letter-spacing: 0.1em;
+        }
+
+        /* ============ HEIST SFEER-ELEMENTEN ============ */
+
+        .mask-icon { display: block; margin: 0 auto; filter: drop-shadow(0 6px 16px rgba(0,0,0,0.6)); }
+        .mask-icon.small { width: 34px; height: auto; }
+        .mask-icon.hero { width: 118px; height: auto; }
+
+        .brand-eyebrow {
+            font-family: 'Share Tech Mono', monospace; color: var(--resistance);
+            letter-spacing: 0.35em; font-size: 0.7rem; text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .brand-title {
+            font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; color: var(--primary);
+            letter-spacing: 0.08em; margin: 4px 0 6px 0; line-height: 1;
+            text-shadow: 0 0 18px rgba(201,160,52,0.35);
+        }
+        .brand-sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 22px; line-height: 1.5; }
+
+        .stamp {
+            display: inline-block; font-family: 'Share Tech Mono', monospace; font-size: 0.7rem;
+            color: var(--resistance); border: 2px solid var(--resistance); border-radius: 4px;
+            padding: 3px 10px; text-transform: uppercase; letter-spacing: 0.2em;
+            transform: rotate(-3deg); margin-bottom: 14px; opacity: 0.85;
+        }
+
+        .corner-frame { position: relative; }
+        .corner-frame::before, .corner-frame::after,
+        .corner-frame .cf-tr, .corner-frame .cf-br { content:""; position:absolute; width:18px; height:18px; border-color: var(--primary); z-index: 2; }
+        .corner-frame::before { top:-2px; left:-2px; border-top:3px solid var(--primary); border-left:3px solid var(--primary); }
+        .corner-frame::after { bottom:-2px; left:-2px; border-bottom:3px solid var(--primary); border-left:3px solid var(--primary); }
+        .corner-frame .cf-tr { top:-2px; right:-2px; border-top:3px solid var(--primary); border-right:3px solid var(--primary); }
+        .corner-frame .cf-br { bottom:-2px; right:-2px; border-bottom:3px solid var(--primary); border-right:3px solid var(--primary); }
+
+        .scan-sweep {
+            position: absolute; left: 6%; right: 6%; height: 2px; top: 0;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            box-shadow: 0 0 8px 2px rgba(201,160,52,0.7);
+            animation: sweep 2.6s linear infinite; pointer-events: none; z-index: 3;
+        }
+        @keyframes sweep { 0% { top: 4%; opacity: 0.9; } 95% { top: 94%; opacity: 0.9; } 100% { top: 94%; opacity: 0; } }
+        @keyframes breathe { 0%, 100% { filter: drop-shadow(0 6px 16px rgba(0,0,0,0.6)) drop-shadow(0 0 0 rgba(201,160,52,0)); } 50% { filter: drop-shadow(0 6px 16px rgba(0,0,0,0.6)) drop-shadow(0 0 18px rgba(201,160,52,0.45)); } }
+
+        .mute-btn {
+            position: fixed; top: 14px; left: 16px; z-index: 9999;
+            width: 34px; height: 34px; border-radius: 50%; background: var(--surface-raised);
+            border: 1px solid var(--primary-dim); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.5); padding: 0; margin: 0;
+        }
+        .mute-btn svg { width: 16px; height: 16px; }
+
+        .team-tag {
+            font-family: 'Share Tech Mono', monospace; font-size: 0.7rem; color: var(--muted);
+            letter-spacing: 0.15em; text-transform: uppercase;
+        }
+
+        @media (min-width: 480px) {
+            .brand-title { font-size: 3rem; }
         }
     </style>
 </head>
 <body>
 
-    <div id="connection-indicator" class="status-dot"></div>
+    <!-- SVG-definities: het masker en het zegel, herbruikt door de hele app -->
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <symbol id="svg-mask" viewBox="0 0 100 120">
+                <path d="M50 4c24 0 40 18 40 44 0 30-16 60-40 68-24-8-40-38-40-68C10 22 26 4 50 4Z" fill="#f2ede0" stroke="#3a352a" stroke-width="1.5"/>
+                <path d="M14 46c8-6 20-9 36-9s28 3 36 9" fill="none" stroke="#3a352a" stroke-width="1.2" opacity="0.5"/>
+                <ellipse cx="33" cy="52" rx="7" ry="9" fill="#221f19"/>
+                <ellipse cx="67" cy="52" rx="7" ry="9" fill="#221f19"/>
+                <circle cx="35.5" cy="49" r="1.6" fill="#f2ede0" opacity="0.8"/>
+                <circle cx="69.5" cy="49" r="1.6" fill="#f2ede0" opacity="0.8"/>
+                <ellipse cx="26" cy="70" rx="7" ry="4.5" fill="#c8697a" opacity="0.55"/>
+                <ellipse cx="74" cy="70" rx="7" ry="4.5" fill="#c8697a" opacity="0.55"/>
+                <path d="M50 56v18" stroke="#3a352a" stroke-width="1.4" stroke-linecap="round"/>
+                <path d="M32 78c5 6 8 8 8 8" stroke="#171512" stroke-width="4.5" stroke-linecap="round"/>
+                <path d="M68 78c-5 6-8 8-8 8" stroke="#171512" stroke-width="4.5" stroke-linecap="round"/>
+                <path d="M28 90c8 10 14 13 22 13s14-3 22-13" fill="none" stroke="#3a352a" stroke-width="1.6" stroke-linecap="round"/>
+                <path d="M36 92c5 4 9 5 14 5s9-1 14-5" fill="none" stroke="#8a2531" stroke-width="2.4" stroke-linecap="round"/>
+            </symbol>
+            <symbol id="svg-seal" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="46" fill="none" stroke="#b3212e" stroke-width="4" stroke-dasharray="6 4"/>
+                <circle cx="50" cy="50" r="34" fill="none" stroke="#b3212e" stroke-width="2"/>
+            </symbol>
+        </defs>
+    </svg>
+
+    <button class="mute-btn" id="mute-btn" onclick="toggleMute()" title="Geluid aan/uit" type="button">
+        <svg id="mute-icon-on" viewBox="0 0 24 24" fill="none" stroke="#c9a034" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 8 9 13 4 13 20 8 15 3 15 3 9" fill="#c9a034"/><path d="M16 8a5 5 0 0 1 0 8"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+        <svg id="mute-icon-off" viewBox="0 0 24 24" fill="none" stroke="#c9a034" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polygon points="3 9 8 9 13 4 13 20 8 15 3 15 3 9" fill="#c9a034"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>
+    </button>
+
+    <div id="connection-indicator" class="status-dot" title="Verbinding met de kluis"></div>
 
     <div class="content-wrapper">
         <!-- Laadscherm -->
         <div id="loading-screen" class="screen active">
-            <h2>Speldata Laden...</h2>
-            <p>De verbinding met de kluis wordt gecontroleerd.</p>
+            <svg class="mask-icon hero" style="animation: fadeIn 0.8s ease, breathe 3s ease-in-out infinite;"><use href="#svg-mask"/></svg>
+            <div class="brand-eyebrow">Toegang tot de kluis</div>
+            <h2 style="color:var(--primary); font-size:1.6rem;">Speldata Laden...</h2>
+            <p class="brand-sub">De verbinding met de kluis wordt gecontroleerd.</p>
             <button id="retry-btn" class="secondary" style="display:none;" onclick="fetchGameData()">Opnieuw Proberen</button>
         </div>
 
         <!-- Login Scherm -->
         <div id="login-screen" class="screen">
-            <h2>De Kraak van de Eeuw</h2>
-            <p>Voer jullie teamnaam in om te starten. De tijd begint direct te lopen!</p>
-            <input type="text" id="team-name" placeholder="Teamnaam (bijv. Groep 1)">
+            <svg class="mask-icon hero"><use href="#svg-mask"/></svg>
+            <div class="brand-eyebrow">Operatie · Vertrouwelijk</div>
+            <h2 class="brand-title">De Kraak<br>van de Eeuw</h2>
+            <p class="brand-sub">Voer jullie teamnaam in om te starten. De tijd begint direct te lopen!</p>
+            <input type="text" id="team-name" placeholder="Codenaam team (bijv. Groep 1)">
             <button onclick="startGame()">Start Missie</button>
         </div>
 
         <!-- Hoofdscherm -->
         <div id="main-screen" class="screen">
             <div class="header">
+                <svg class="mask-icon small header-mask"><use href="#svg-mask"/></svg>
                 <h2 id="display-team">Team</h2>
                 <div class="time" id="time-display">00:00</div>
             </div>
 
-            <button onclick="openScanner()">Scan Nieuw Voorwerp (QR)</button>
-            <button class="secondary" onclick="openCombine()">Combineer Voorwerpen</button>
+            <button onclick="openScanner()">⌕ Scan Nieuw Voorwerp (QR)</button>
+            <button class="secondary" onclick="openCombine()">⚙ Combineer Voorwerpen</button>
 
             <!-- HINTS KNOP (Dynamisch zichtbaar) -->
             <button id="hints-btn" class="secondary" style="display:none; margin-bottom: 16px;" onclick="showScreen('hints-screen')">Lees alle hints (0)</button>
 
             <div class="card">
+                <div class="stamp">Bewijsstukken</div>
                 <h3>Jullie Inventaris</h3>
                 <ul id="inventory-list"></ul>
             </div>
@@ -144,6 +321,7 @@
         <!-- Hints Scherm -->
         <div id="hints-screen" class="screen">
             <div class="header">
+                <svg class="mask-icon small header-mask"><use href="#svg-mask"/></svg>
                 <h2>Gevonden Hints</h2>
                 <div class="time" id="hints-time-display">00:00</div>
             </div>
@@ -153,18 +331,25 @@
 
         <!-- Scanner Scherm -->
         <div id="scanner-screen" class="screen">
-            <h2>Scan QR Code</h2>
-            <div id="reader"></div>
+            <div class="brand-eyebrow">Doelwit lokaliseren</div>
+            <h2 style="color:var(--primary); margin-top:0;">Scan QR Code</h2>
+            <div class="corner-frame" style="width:100%; position:relative;">
+                <div class="scan-sweep"></div>
+                <div id="reader"></div>
+                <div class="cf-tr"></div>
+                <div class="cf-br"></div>
+            </div>
             <button class="secondary" onclick="closeScanner()">Annuleren</button>
         </div>
 
         <!-- Combineer Scherm -->
         <div id="combine-screen" class="screen">
             <div class="header">
+                <svg class="mask-icon small header-mask"><use href="#svg-mask"/></svg>
                 <h2>Combineer</h2>
                 <div class="time" id="combine-time-display">00:00</div>
             </div>
-            <p>Kies twee unieke items. Een foute combinatie kost 1 minuut straftijd!</p>
+            <p class="brand-sub" style="margin-bottom:12px;">Kies twee unieke items. Een foute combinatie kost 1 minuut straftijd!</p>
             <select id="item-select-1"><option value="">Kies Voorwerp 1</option></select>
             <select id="item-select-2"><option value="">Kies Voorwerp 2</option></select>
             <button onclick="tryCombination()">Probeer Combinatie</button>
@@ -173,6 +358,7 @@
 
         <!-- Resultaat / Verhaal Scherm -->
         <div id="story-screen" class="screen">
+            <svg class="mask-icon" style="width:60px; margin-bottom:8px;"><use href="#svg-seal"/></svg>
             <div class="card">
                 <h3 id="story-title">Resultaat</h3>
                 <p id="story-text" style="white-space: pre-line;"></p>
@@ -517,6 +703,206 @@
             }
             return false;
         }
+    </script>
+
+    <!-- ============================================================
+         HEIST AUDIO-ENGINE (los blok, raakt bovenstaande spellogica niet aan)
+         Volledig zelf-gesynthetiseerd via Web Audio API: geen externe
+         geluidsbestanden nodig, dus geen extra netwerk- of copyright-risico.
+         ============================================================ -->
+    <script>
+        let audioCtx = null;
+        let musicNodes = null;
+        let musicMuted = (localStorage.getItem('kraak_muted') === '1');
+        let musicStarted = false;
+
+        function ensureAudioCtx() {
+            if (!audioCtx) {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return null;
+                audioCtx = new AC();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            return audioCtx;
+        }
+
+        // Start de gespannen achtergrondmuziek zodra het team op "Start Missie" drukt.
+        function startHeistAudio() {
+            const ctx = ensureAudioCtx();
+            if (!ctx || musicStarted) return;
+            musicStarted = true;
+
+            const master = ctx.createGain();
+            master.gain.value = musicMuted ? 0 : 0.16;
+            master.connect(ctx.destination);
+
+            // Diepe, dreigende drone-bas (het "hart" van de kluis)
+            const drone = ctx.createOscillator();
+            drone.type = 'sawtooth';
+            drone.frequency.value = 55;
+            const droneFilter = ctx.createBiquadFilter();
+            droneFilter.type = 'lowpass';
+            droneFilter.frequency.value = 220;
+            const droneGain = ctx.createGain();
+            droneGain.gain.value = 0.5;
+            drone.connect(droneFilter).connect(droneGain).connect(master);
+            drone.start();
+
+            // Kloppende hartslag / spanningspuls
+            const pulseOsc = ctx.createOscillator();
+            pulseOsc.type = 'sine';
+            pulseOsc.frequency.value = 110;
+            const pulseGain = ctx.createGain();
+            pulseGain.gain.value = 0;
+            pulseOsc.connect(pulseGain).connect(master);
+            pulseOsc.start();
+
+            let pulseStep = 0;
+            const pulseTimer = setInterval(() => {
+                if (!audioCtx) return;
+                const t = ctx.currentTime;
+                pulseGain.gain.cancelScheduledValues(t);
+                pulseGain.gain.setValueAtTime(pulseGain.gain.value, t);
+                pulseGain.gain.linearRampToValueAtTime(0.22, t + 0.05);
+                pulseGain.gain.linearRampToValueAtTime(0, t + 0.35);
+                pulseStep++;
+            }, 900);
+
+            // Sluipende, dissonante arpeggio-lijn (het "aftellen")
+            const arpNotes = [110, 130.8, 116.5, 138.6];
+            let arpIndex = 0;
+            const arpGain = ctx.createGain();
+            arpGain.gain.value = 0.08;
+            arpGain.connect(master);
+            const arpTimer = setInterval(() => {
+                if (!audioCtx) return;
+                const osc = ctx.createOscillator();
+                osc.type = 'triangle';
+                osc.frequency.value = arpNotes[arpIndex % arpNotes.length];
+                arpIndex++;
+                const g = ctx.createGain();
+                const t = ctx.currentTime;
+                g.gain.setValueAtTime(0, t);
+                g.gain.linearRampToValueAtTime(0.9, t + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+                osc.connect(g).connect(arpGain);
+                osc.start(t);
+                osc.stop(t + 0.5);
+            }, 500);
+
+            musicNodes = { master, drone, pulseOsc, pulseTimer, arpTimer };
+        }
+
+        function toggleMute() {
+            musicMuted = !musicMuted;
+            localStorage.setItem('kraak_muted', musicMuted ? '1' : '0');
+            if (musicNodes && musicNodes.master && audioCtx) {
+                musicNodes.master.gain.setTargetAtTime(musicMuted ? 0 : 0.16, audioCtx.currentTime, 0.05);
+            }
+            document.getElementById('mute-icon-on').style.display = musicMuted ? 'none' : 'block';
+            document.getElementById('mute-icon-off').style.display = musicMuted ? 'block' : 'none';
+            // Als er nog geen muziek draait (bv. voor de start van de missie), toch de audiocontext alvast ontgrendelen.
+            if (!musicMuted) ensureAudioCtx();
+        }
+
+        // Korte, gesynthetiseerde geluidseffecten voor scans en combinaties.
+        function playSfx(kind) {
+            const ctx = ensureAudioCtx();
+            if (!ctx || musicMuted) return;
+            const t = ctx.currentTime;
+            const out = ctx.createGain();
+            out.connect(ctx.destination);
+
+            if (kind === 'scan') {
+                out.gain.value = 0.22;
+                const osc = ctx.createOscillator();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(880, t);
+                osc.frequency.exponentialRampToValueAtTime(1320, t + 0.12);
+                const g = ctx.createGain();
+                g.gain.setValueAtTime(0.5, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+                osc.connect(g).connect(out);
+                osc.start(t); osc.stop(t + 0.2);
+            } else if (kind === 'success') {
+                out.gain.value = 0.25;
+                [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
+                    const g = ctx.createGain();
+                    const start = t + i * 0.09;
+                    g.gain.setValueAtTime(0, start);
+                    g.gain.linearRampToValueAtTime(0.5, start + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.001, start + 0.4);
+                    osc.connect(g).connect(out);
+                    osc.start(start); osc.stop(start + 0.42);
+                });
+            } else if (kind === 'alarm') {
+                out.gain.value = 0.22;
+                for (let i = 0; i < 2; i++) {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'sawtooth';
+                    const start = t + i * 0.24;
+                    osc.frequency.setValueAtTime(440, start);
+                    osc.frequency.linearRampToValueAtTime(220, start + 0.2);
+                    const g = ctx.createGain();
+                    g.gain.setValueAtTime(0.5, start);
+                    g.gain.exponentialRampToValueAtTime(0.001, start + 0.22);
+                    osc.connect(g).connect(out);
+                    osc.start(start); osc.stop(start + 0.24);
+                }
+            } else if (kind === 'error') {
+                out.gain.value = 0.2;
+                const osc = ctx.createOscillator();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(180, t);
+                const g = ctx.createGain();
+                g.gain.setValueAtTime(0.4, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+                osc.connect(g).connect(out);
+                osc.start(t); osc.stop(t + 0.25);
+            }
+        }
+
+        // Zet het juiste mute-icoon bij het laden van de pagina.
+        document.addEventListener('DOMContentLoaded', () => {
+            const onIcon = document.getElementById('mute-icon-on');
+            const offIcon = document.getElementById('mute-icon-off');
+            if (onIcon && offIcon) {
+                onIcon.style.display = musicMuted ? 'none' : 'block';
+                offIcon.style.display = musicMuted ? 'block' : 'none';
+            }
+        });
+
+        // --- Niet-invasieve haakjes in de bestaande spelfuncties ---
+        // We wikkelen de originele functies in zodat de kernlogica hierboven
+        // volledig ongewijzigd blijft; we voegen alleen geluid toe.
+        const _startGame = startGame;
+        startGame = function() {
+            _startGame.apply(this, arguments);
+            startHeistAudio();
+        };
+
+        const _onScanSuccess = onScanSuccess;
+        onScanSuccess = function(decodedText) {
+            const before = inventory.length;
+            _onScanSuccess.apply(this, arguments);
+            if (inventory.length > before) {
+                playSfx('scan');
+            }
+        };
+
+        const _tryCombination = tryCombination;
+        tryCombination = function() {
+            const before = penaltyMinutes;
+            _tryCombination.apply(this, arguments);
+            if (penaltyMinutes > before) {
+                playSfx('alarm');
+            } else {
+                playSfx('success');
+            }
+        };
     </script>
 </body>
 </html>

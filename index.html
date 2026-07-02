@@ -27,9 +27,28 @@
         .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 500px; margin: 0 auto; text-align: center; }
         .screen.active { display: flex; }
         
-        .header { width: 100%; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 12px; margin-bottom: 20px; }
-        .header h2 { margin: 0; font-size: 1.2rem; color: var(--primary); }
-        .time { font-family: monospace; font-size: 1.2rem; font-weight: bold; color: var(--error); }
+        /* GECENTREERDE TIMER HEADER */
+        .header { 
+            width: 100%; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid #333; 
+            padding-bottom: 12px; 
+            margin-bottom: 20px; 
+            position: relative;
+        }
+        .header h2 { margin: 0; font-size: 1.2rem; color: var(--primary); z-index: 1; }
+        .time { 
+            font-family: monospace; 
+            font-size: 1.2rem; 
+            font-weight: bold; 
+            color: var(--error); 
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1;
+        }
         
         button { background: var(--primary); color: #000; border: none; padding: 14px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 12px; }
         button.secondary { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
@@ -40,53 +59,46 @@
         .card h3 { margin-top: 0; color: var(--primary); }
         
         ul { list-style: none; padding: 0; margin: 0; width: 100%; }
-        li { background: #2c2c2c; padding: 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; font-weight: 500; }
+        li { background: #2c2c2c; padding: 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+        li:active { background: #3d3d3d; }
+        .click-hint { font-size: 0.8rem; color: var(--primary); opacity: 0.7; }
         
         #reader { width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 16px; transform: translateZ(0); }
         
-        /* VERPLICHT LIVE CAMERA: VERBERGT EXTENSION/BESTANDSUPLOAD OPTIES IN DE SCANNER */
-        #reader__dashboard_section_swaplink, 
-        #reader__camera_selection + div,
-        #reader input[type="file"],
-        #reader button[id*="scan-image"] { 
-            display: none !important; 
-        }
+        /* Camera-upload verbergen */
+        #reader__dashboard_section_swaplink, #reader__camera_selection + div, #reader input[type="file"], #reader button[id*="scan-image"] { display: none !important; }
 
-        /* VERBINDINGSINDICATOR RECHTSBOVEN */
+        /* STATUS INDICATOR */
         .status-dot {
-            width: 12px;
-            height: 12px;
-            background-color: var(--error);
-            border-radius: 50%;
-            position: fixed;
-            top: 16px;
-            right: 16px;
-            z-index: 9999;
-            transition: background-color 0.3s ease;
-            box-shadow: 0 0 4px rgba(0,0,0,0.5);
+            width: 12px; height: 12px; background-color: var(--error); border-radius: 50%;
+            position: fixed; top: 16px; right: 16px; z-index: 9999;
+            transition: background-color 0.3s ease; box-shadow: 0 0 4px rgba(0,0,0,0.5);
         }
-        .status-dot.connected {
-            background-color: var(--primary);
-            animation: pulse 2s infinite;
-        }
+        .status-dot.connected { background-color: var(--primary); animation: pulse 2s infinite; }
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(3, 218, 198, 0.7); }
             70% { box-shadow: 0 0 0 8px rgba(3, 218, 198, 0); }
             100% { box-shadow: 0 0 0 0 rgba(3, 218, 198, 0); }
         }
 
-        /* VERSIEBEHEER FOOTER */
+        /* MODAL POPUP */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center;
+            padding: 16px; box-sizing: border-box;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: var(--surface); padding: 24px; border-radius: 12px; 
+            width: 100%; max-width: 400px; text-align: left; box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+        }
+        .modal-content h3 { margin-top: 0; color: var(--primary); margin-bottom: 12px; }
+        .modal-content p { line-height: 1.5; margin-bottom: 24px; white-space: pre-line; }
+
         .version-footer {
-            text-align: center;
-            font-size: 0.75rem;
-            color: var(--muted);
-            margin-top: 40px;
-            padding-top: 10px;
-            border-top: 1px solid #222;
-            width: 100%;
-            max-width: 500px;
-            margin-left: auto;
-            margin-right: auto;
+            text-align: center; font-size: 0.75rem; color: var(--muted);
+            margin-top: 40px; padding-top: 10px; border-top: 1px solid #222;
+            width: 100%; max-width: 500px; margin-left: auto; margin-right: auto;
         }
     </style>
 </head>
@@ -95,12 +107,14 @@
     <div id="connection-indicator" class="status-dot"></div>
 
     <div class="content-wrapper">
+        <!-- Laadscherm -->
         <div id="loading-screen" class="screen active">
             <h2>Speldata Laden...</h2>
             <p>De verbinding met de kluis wordt gecontroleerd.</p>
             <button id="retry-btn" class="secondary" style="display:none;" onclick="fetchGameData()">Opnieuw Proberen</button>
         </div>
 
+        <!-- Login Scherm -->
         <div id="login-screen" class="screen">
             <h2>De Kraak van de Eeuw</h2>
             <p>Voer jullie teamnaam in om te starten. De tijd begint direct te lopen!</p>
@@ -108,6 +122,7 @@
             <button onclick="startGame()">Start Missie</button>
         </div>
 
+        <!-- Hoofdscherm -->
         <div id="main-screen" class="screen">
             <div class="header">
                 <h2 id="display-team">Team</h2>
@@ -117,20 +132,38 @@
             <button onclick="openScanner()">Scan Nieuw Voorwerp (QR)</button>
             <button class="secondary" onclick="openCombine()">Combineer Voorwerpen</button>
 
+            <!-- HINTS KNOP (Dynamisch zichtbaar) -->
+            <button id="hints-btn" class="secondary" style="display:none; margin-bottom: 16px;" onclick="showScreen('hints-screen')">Lees alle hints (0)</button>
+
             <div class="card">
                 <h3>Jullie Inventaris</h3>
                 <ul id="inventory-list"></ul>
             </div>
         </div>
 
+        <!-- Hints Scherm -->
+        <div id="hints-screen" class="screen">
+            <div class="header">
+                <h2>Gevonden Hints</h2>
+                <div class="time" id="hints-time-display">00:00</div>
+            </div>
+            <div id="hints-list" style="width:100%; text-align:left; margin-bottom: 16px;"></div>
+            <button class="secondary" onclick="showScreen('main-screen')">Terug naar Inventaris</button>
+        </div>
+
+        <!-- Scanner Scherm -->
         <div id="scanner-screen" class="screen">
             <h2>Scan QR Code</h2>
             <div id="reader"></div>
             <button class="secondary" onclick="closeScanner()">Annuleren</button>
         </div>
 
+        <!-- Combineer Scherm -->
         <div id="combine-screen" class="screen">
-            <h2>Combineer Items</h2>
+            <div class="header">
+                <h2>Combineer</h2>
+                <div class="time" id="combine-time-display">00:00</div>
+            </div>
             <p>Kies twee unieke items. Een foute combinatie kost 1 minuut straftijd!</p>
             <select id="item-select-1"><option value="">Kies Voorwerp 1</option></select>
             <select id="item-select-2"><option value="">Kies Voorwerp 2</option></select>
@@ -138,18 +171,28 @@
             <button class="secondary" onclick="showScreen('main-screen')">Terug</button>
         </div>
 
+        <!-- Resultaat / Verhaal Scherm -->
         <div id="story-screen" class="screen">
             <div class="card">
                 <h3 id="story-title">Resultaat</h3>
-                <p id="story-text"></p>
-                <p><strong style="color:var(--primary)">Hint:</strong> <span id="story-hint"></span></p>
+                <p id="story-text" style="white-space: pre-line;"></p>
+                <p><strong style="color:var(--primary)">Omschrijving:</strong> <span id="story-hint"></span></p>
             </div>
             <button onclick="showScreen('main-screen')">Begrepen, ga door!</button>
         </div>
     </div>
 
+    <!-- Verhaal Popup Modal -->
+    <div id="item-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Titel</h3>
+            <p id="modal-story">Verhaal...</p>
+            <button onclick="closeModal()">Sluiten</button>
+        </div>
+    </div>
+
     <div class="version-footer">
-        De Kraak van de Eeuw — Engine Versie 1.5
+        De Kraak van de Eeuw — Engine Versie 1.6
     </div>
 
     <script>
@@ -224,10 +267,7 @@
         function openScanner() {
             showScreen('scanner-screen');
             html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
-                fps: 10, 
-                qrbox: {width: 250, height: 250}, 
-                aspectRatio: 1.0, 
-                videoConstraints: { facingMode: "environment" } 
+                fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0, videoConstraints: { facingMode: "environment" } 
             }, false);
             html5QrcodeScanner.render(onScanSuccess, (err) => {});
         }
@@ -243,11 +283,14 @@
             
             if (knownItems[scannedId]) {
                 if (inventory.find(i => i.id === scannedId)) {
-                    alert("Je hebt dit voorwerp al in je inventaris!");
+                    alert("Dit heb je al in je bezit!");
                 } else {
-                    inventory.push({ id: scannedId, name: knownItems[scannedId] });
+                    inventory.push({ id: scannedId, name: knownItems[scannedId].name });
                     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-                    alert(`Gevonden: ${knownItems[scannedId]}!`);
+                    
+                    const isHint = knownItems[scannedId].type.includes('hint');
+                    alert(`Gevonden: ${knownItems[scannedId].name}! ${isHint ? "(Toegevoegd aan Hints)" : ""}`);
+                    
                     saveLocalState();
                 }
             } else {
@@ -262,9 +305,13 @@
             sel1.innerHTML = '<option value="">Kies Voorwerp 1</option>';
             sel2.innerHTML = '<option value="">Kies Voorwerp 2</option>';
             
+            // Hints mogen niet gecombineerd worden, dus we filteren ze hier uit
             inventory.forEach(item => {
-                sel1.innerHTML += `<option value="${item.id}">${item.name}</option>`;
-                sel2.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+                const itemData = knownItems[item.id] || { type: 'inventaris' };
+                if (!itemData.type.includes('hint')) {
+                    sel1.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+                    sel2.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+                }
             });
             showScreen('combine-screen');
         }
@@ -280,7 +327,6 @@
             if (combinations[comboKey]) {
                 const result = combinations[comboKey];
                 
-                // REGELEMENT 2: Gescande items blijven behouden, voeg enkel Item C toe.
                 if (!inventory.find(i => i.id === result.resId)) {
                     inventory.push({ id: result.resId, name: result.resName });
                 }
@@ -301,6 +347,19 @@
             }
         }
 
+        // --- POPUP LOGICA ---
+        function showItemModal(id) {
+            const itemData = knownItems[id];
+            if (!itemData) return;
+            document.getElementById('modal-title').innerText = itemData.name;
+            document.getElementById('modal-story').innerText = itemData.story || "Dit is een basisvoorwerp. Er is geen verdere beschrijving beschikbaar.";
+            document.getElementById('item-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('item-modal').classList.remove('active');
+        }
+
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -308,12 +367,49 @@
 
         function updateUI() {
             document.getElementById('display-team').innerText = teamName;
-            const list = document.getElementById('inventory-list');
-            list.innerHTML = '';
-            if(inventory.length === 0) list.innerHTML = '<li>Nog geen voorwerpen.</li>';
+            
+            const invList = document.getElementById('inventory-list');
+            const hintsList = document.getElementById('hints-list');
+            const hintsBtn = document.getElementById('hints-btn');
+            
+            invList.innerHTML = '';
+            hintsList.innerHTML = '';
+            
+            let invCount = 0;
+            let hintCount = 0;
+
             inventory.forEach(item => {
-                list.innerHTML += `<li>${item.name} <span>#${item.id}</span></li>`;
+                const itemData = knownItems[item.id] || { type: 'inventaris', story: '' };
+                const isHint = itemData.type.includes('hint');
+                
+                if (isHint) {
+                    hintCount++;
+                    hintsList.innerHTML += `
+                        <div class="card" style="margin-bottom:8px;">
+                            <h4 style="margin:0 0 8px 0; color:var(--primary);">${item.name}</h4>
+                            <p style="margin:0; font-size:14px; line-height:1.4; white-space:pre-line;">${itemData.story || "Geen extra tekst."}</p>
+                        </div>`;
+                } else {
+                    invCount++;
+                    invList.innerHTML += `
+                        <li onclick="showItemModal(${item.id})">
+                            <span>${item.name} <span class="click-hint">(bekijk)</span></span> 
+                            <span>#${item.id}</span>
+                        </li>`;
+                }
             });
+
+            if(invCount === 0) invList.innerHTML = '<li>Nog geen voorwerpen.</li>';
+            if(hintCount === 0) hintsList.innerHTML = '<p>Jullie hebben nog geen hints gevonden.</p>';
+
+            // Toon knop alleen als er hints zijn
+            if(hintCount > 0) {
+                hintsBtn.style.display = 'block';
+                hintsBtn.innerText = `Lees alle hints (${hintCount})`;
+            } else {
+                hintsBtn.style.display = 'none';
+            }
+
             updateTimerUI();
         }
 
@@ -323,15 +419,25 @@
             const totalSeconds = Math.floor(elapsedMs / 1000) + (penaltyMinutes * 60);
             const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
             const s = (totalSeconds % 60).toString().padStart(2, '0');
-            document.getElementById('time-display').innerText = `${m}:${s}`;
+            
+            const timeString = `${m}:${s}`;
+            document.getElementById('time-display').innerText = timeString;
+            
+            // Update timers op andere schermen
+            const hintTime = document.getElementById('hints-time-display');
+            if(hintTime) hintTime.innerText = timeString;
+            
+            const combineTime = document.getElementById('combine-time-display');
+            if(combineTime) combineTime.innerText = timeString;
         }
 
-        // LINE-BREAK VEILIGE RFC-COMPLIANTE PARSER
+        // PARSER MET KOLOM K HERKENNING
         function parseGameData(csvText) {
             let lines = [];
             let row = [""];
             let inQuotes = false;
 
+            // Character-by-character lezer (RFC compliant)
             for (let i = 0; i < csvText.length; i++) {
                 let char = csvText[i];
                 let nextChar = csvText[i + 1];
@@ -360,24 +466,39 @@
                 const cleanCols = cols.map(v => v.trim().replace(/^"|"$/g, ''));
                 if (cleanCols.length < 7) return;
 
-                let idA = parseInt(cleanCols[1]); let naamA = cleanCols[2];
-                let idB = parseInt(cleanCols[4]); let naamB = cleanCols[5];
-                let resId = parseInt(cleanCols[6]); let resNaam = cleanCols[7];
-                let story = cleanCols[8] || ""; let hint = cleanCols[9] || "";
+                // Bepaal de verschuiving als Kolom A leeg/verwijderd is
+                let offset = isNaN(parseInt(cleanCols[1])) && !isNaN(parseInt(cleanCols[0])) ? -1 : 0;
 
-                if (isNaN(idA) && !isNaN(parseInt(cleanCols[0]))) {
-                    idA = parseInt(cleanCols[0]); naamA = cleanCols[1];
-                    idB = parseInt(cleanCols[2]); naamB = cleanCols[3];
-                    resId = parseInt(cleanCols[4]); resNaam = cleanCols[5];
-                    story = cleanCols[6] || ""; hint = cleanCols[7] || "";
-                }
+                let idA = parseInt(cleanCols[1 + offset]);
+                let naamA = cleanCols[2 + offset];
+                let idB = parseInt(cleanCols[4 + offset]);
+                let naamB = cleanCols[5 + offset];
+                let resId = parseInt(cleanCols[6 + offset]);
+                let resNaam = cleanCols[7 + offset];
+                let story = cleanCols[8 + offset] || "";
+                let hintText = cleanCols[9 + offset] || "";
+                
+                // Kolom K bevat de type-informatie
+                let typeInfo = cleanCols[10 + offset] ? cleanCols[10 + offset].toLowerCase().trim() : "inventaris";
 
-                if(!isNaN(idA) && naamA) knownItems[idA] = naamA;
-                if(!isNaN(idB) && naamB) knownItems[idB] = naamB;
-                if(!isNaN(resId) && resNaam) {
-                    knownItems[resId] = resNaam;
-                    combinations[`${idA}_${idB}`] = { resId, resName: resNaam, story, hint };
-                    combinations[`${idB}_${idA}`] = { resId, resName: resNaam, story, hint }; 
+                // Leg alle gevonden ID's vast, inclusief types en verhalen
+                if (!isNaN(resId) && resNaam) {
+                    knownItems[resId] = { name: resNaam, type: typeInfo, story: story };
+                    combinations[`${idA}_${idB}`] = { resId, resName: resNaam, story, hint: hintText };
+                    combinations[`${idB}_${idA}`] = { resId, resName: resNaam, story, hint: hintText };
+                    
+                    // Zorg dat de basis voorwerpen ook altijd een fallback hebben in de dictionary
+                    if (!knownItems[idA]) knownItems[idA] = { name: naamA, type: "inventaris", story: "" };
+                    if (!knownItems[idB]) knownItems[idB] = { name: naamB, type: "inventaris", story: "" };
+                } else if (!isNaN(idA) && naamA) {
+                    // Mocht een hint of voorwerp direct gescand worden zonder combinatie (standalone row)
+                    if (!knownItems[idA]) {
+                        knownItems[idA] = { name: naamA, type: typeInfo, story: story };
+                    } else {
+                        // Update bestaande data indien we nu meer info hebben in deze rij
+                        knownItems[idA].type = typeInfo;
+                        if(story) knownItems[idA].story = story;
+                    }
                 }
             });
         }

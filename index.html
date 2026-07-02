@@ -44,14 +44,14 @@
         
         #reader { width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 16px; transform: translateZ(0); }
         
-        /* Verwijdert de afbeelding-upload optie uit de scanner UI */
+        /* Schermt de foto-upload optie af in de scanner UI */
         #reader__dashboard_section_swaplink, 
         #reader__camera_selection + div,
         #reader button[id*="scan-image"] { 
             display: none !important; 
         }
 
-        /* Versie-indicator onderaan de pagina */
+        /* Versiebeheer onderaan */
         .version-footer {
             text-align: center;
             font-size: 0.75rem;
@@ -123,7 +123,7 @@
     </div>
 
     <div class="version-footer">
-        De Kraak van de Eeuw — Engine Versie 1.3
+        De Kraak van de Eeuw — Engine Versie 1.4
     </div>
 
     <script>
@@ -152,11 +152,189 @@
             
             fetch(CSV_URL)
                 .then(response => {
-                    if (!response.ok) throw new Error("Netwerkfout bij ophalen Sheet");
+                    if (!response.ok) throw new Error("Netwerkfout bij ophalen kluis");
                     return response.text();
                 })
                 .then(csvText => {
                     parseGameData(csvText);
-                    if (Object.keys(knownItems).length === 0) throw new Error("Geen geldige data verwerkt");
+                    if (Object.keys(knownItems).length === 0) throw new Error("Geen bruikbare speldata kunnen inladen.");
                     
-                    document.getElementById('loading-screen').classList.remove
+                    document.getElementById('loading-screen').classList.remove('active');
+                    if (loadLocalState()) {
+                        updateUI();
+                        showScreen('main-screen');
+                    } else {
+                        showScreen('login-screen');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('retry-btn').style.display = 'block';
+                    alert("Fout bij synchroniseren met de kluis. Controleer of de Google Sheet openbaar op 'Lezen' staat en druk op Opnieuw Proberen.");
+                });
+        }
+
+        function startGame() {
+            const name = document.getElementById('team-name').value.trim();
+            if(!name) return alert("Vul een teamnaam in!");
+            teamName = name;
+            startTime = Date.now();
+            penaltyMinutes = 0;
+            inventory = [];
+            saveLocalState();
+            updateUI();
+            showScreen('main-screen');
+        }
+
+        function openScanner() {
+            showScreen('scanner-screen');
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+                fps: 10, 
+                qrbox: {width: 250, height: 250}, 
+                aspectRatio: 1.0, 
+                videoConstraints: { facingMode: "environment" } 
+            }, false);
+            html5QrcodeScanner.render(onScanSuccess, (err) => {});
+        }
+
+        function closeScanner() {
+            if(html5QrcodeScanner) html5QrcodeScanner.clear();
+            showScreen('main-screen');
+        }
+
+        function onScanSuccess(decodedText) {
+            closeScanner();
+            const scannedId = parseInt(decodedText);
+            
+            if (knownItems[scannedId]) {
+                const hasBlueprint = inventory.find(i => i.id === 1);
+                
+                if (scannedId !== 1 && !hasBlueprint) {
+                    alert("⚠️ Je moet eerst de Blauwdruk (Item 1) vinden voordat je andere voorwerpen kunt meenemen!");
+                    updateUI();
+                    return; 
+                }
+
+                if (inventory.find(i => i.id === scannedId)) {
+                    alert("Je hebt dit voorwerp al in je inventaris!");
+                } else {
+                    inventory.push({ id: scannedId, name: knownItems[scannedId] });
+                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                    alert(`Gevonden: ${knownItems[scannedId]}!`);
+                    saveLocalState();
+                }
+            } else {
+                alert("QR Code niet herkend of ongeldig in dit spel.");
+            }
+            updateUI();
+        }
+
+        function openCombine() {
+            const sel1 = document.getElementById('item-select-1');
+            const sel2 = document.getElementById('item-select-2');
+            sel1.innerHTML = '<option value="">Kies Voorwerp 1</option>';
+            sel2.innerHTML = '<option value="">Kies Voorwerp 2</option>';
+            
+            inventory.forEach(item => {
+                sel1.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+                sel2.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+            });
+            showScreen('combine-screen');
+        }
+
+        function tryCombination() {
+            const id1 = document.getElementById('item-select-1').value;
+            const id2 = document.getElementById('item-select-2').value;
+
+            if(!id1 || !id2) return alert("Kies twee voorwerpen!");
+            if(id1 === id2) return alert("Je kunt een voorwerp niet met zichzelf combineren!");
+
+            const comboKey = `${id1}_${id2}`;
+            if (combinations[comboKey]) {
+                const result = combinations[comboKey];
+                
+                if (!inventory.find(i => i.id === result.resId)) {
+                    inventory.push({ id: result.resId, name: result.resName });
+                }
+
+                document.getElementById('story-title').innerText = "Succes: " + result.resName;
+                document.getElementById('story-text').innerText = result.story;
+                document.getElementById('story-hint').innerText = result.hint;
+                
+                saveLocalState();
+                updateUI(); 
+                showScreen('story-screen');
+            } else {
+                penaltyMinutes++;
+                alert("Helaas, deze combinatie levert niets op! (+1 Minuut straftijd)");
+                saveLocalState();
+                updateUI();
+                showScreen('main-screen');
+            }
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function updateUI() {
+            document.getElementById('display-team').innerText = teamName;
+            const list = document.getElementById('inventory-list');
+            list.innerHTML = '';
+            if(inventory.length === 0) list.innerHTML = '<li>Nog geen voorwerpen.</li>';
+            inventory.forEach(item => {
+                list.innerHTML += `<li>${item.name} <span>#${item.id}</span></li>`;
+            });
+            updateTimerUI();
+        }
+
+        function updateTimerUI() {
+            if(!startTime) return;
+            const elapsedMs = Date.now() - startTime;
+            const totalSeconds = Math.floor(elapsedMs / 1000) + (penaltyMinutes * 60);
+            const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+            const s = (totalSeconds % 60).toString().padStart(2, '0');
+            document.getElementById('time-display').innerText = `${m}:${s}`;
+        }
+
+        // SLIMMERE MULTI-LINE CSV PARSER (RFC 4180 COMPLIANT)
+        // Negeert enters als ze binnen aanhalingstekens staan (alinea's in verhalen)
+        function parseGameData(csvText) {
+            let rows = [];
+            let currentRow = [];
+            let currentCell = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < csvText.length; i++) {
+                let char = csvText[i];
+                let nextChar = csvText[i + 1];
+
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        currentCell += '"'; // Dubbele quotes ontsnappen
+                        i++; 
+                    } else {
+                        inQuotes = !inQuotes; // Wissel quote status
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    currentRow.push(currentCell.trim());
+                    currentCell = '';
+                } else if ((char === '\n' || char === '\r') && !inQuotes) {
+                    if (char === '\r' && nextChar === '\n') { i++; } // Sla over bij Windows CRLF
+                    currentRow.push(currentCell.trim());
+                    if (currentRow.length > 0 && currentRow.some(c => c !== '')) {
+                        rows.push(currentRow);
+                    }
+                    currentRow = [];
+                    currentCell = '';
+                } else {
+                    currentCell += char;
+                }
+            }
+            if (currentCell || currentRow.length > 0) {
+                currentRow.push(currentCell.trim());
+                rows.push(currentRow);
+            }
+
+            // Verwerk de

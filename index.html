@@ -18,6 +18,7 @@
             display: flex;
             flex-direction: column;
             min-height: 95vh;
+            position: relative;
         }
         .content-wrapper {
             flex: 1;
@@ -32,7 +33,6 @@
         
         button { background: var(--primary); color: #000; border: none; padding: 14px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 12px; }
         button.secondary { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
-        button.danger { background: transparent; color: var(--error); border: 2px solid var(--error); margin-top: 20px;}
         
         input, select { width: 100%; padding: 14px; margin-bottom: 16px; background: var(--surface); color: white; border: 1px solid #333; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
         
@@ -44,15 +44,38 @@
         
         #reader { width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 16px; transform: translateZ(0); }
         
-        /* VERWIJDER DE 'SELECT IMAGE' / BESTANDSKEUZE FUNCTIE VOLLEDIG UIT DE UI */
+        /* VERPLICHT LIVE CAMERA: VERBERGT EXTENSION/BESTANDSUPLOAD OPTIES IN DE SCANNER */
         #reader__dashboard_section_swaplink, 
         #reader__camera_selection + div,
-        #reader button[id*="scan-image"],
-        #reader input[type="file"] { 
+        #reader input[type="file"],
+        #reader button[id*="scan-image"] { 
             display: none !important; 
         }
 
-        /* Vaste versievermelding onderaan de pagina */
+        /* VERBINDINGSINDICATOR RECHTSBOVEN */
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background-color: var(--error);
+            border-radius: 50%;
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 9999;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 0 4px rgba(0,0,0,0.5);
+        }
+        .status-dot.connected {
+            background-color: var(--primary);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(3, 218, 198, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(3, 218, 198, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(3, 218, 198, 0); }
+        }
+
+        /* VERSIEBEHEER FOOTER */
         .version-footer {
             text-align: center;
             font-size: 0.75rem;
@@ -69,16 +92,18 @@
 </head>
 <body>
 
+    <div id="connection-indicator" class="status-dot"></div>
+
     <div class="content-wrapper">
         <div id="loading-screen" class="screen active">
             <h2>Speldata Laden...</h2>
-            <p>Even geduld, we maken verbinding met de kluis.</p>
+            <p>De verbinding met de kluis wordt gecontroleerd.</p>
             <button id="retry-btn" class="secondary" style="display:none;" onclick="fetchGameData()">Opnieuw Proberen</button>
         </div>
 
         <div id="login-screen" class="screen">
             <h2>De Kraak van de Eeuw</h2>
-            <p>Voer jullie teamnaam in om de missie te starten. Zodra je start, gaat de tijd lopen!</p>
+            <p>Voer jullie teamnaam in om te starten. De tijd begint direct te lopen!</p>
             <input type="text" id="team-name" placeholder="Teamnaam (bijv. Groep 1)">
             <button onclick="startGame()">Start Missie</button>
         </div>
@@ -106,7 +131,7 @@
 
         <div id="combine-screen" class="screen">
             <h2>Combineer Items</h2>
-            <p>Kies twee items uit je inventaris. Een foute combinatie kost je 1 minuut straftijd!</p>
+            <p>Kies twee unieke items. Een foute combinatie kost 1 minuut straftijd!</p>
             <select id="item-select-1"><option value="">Kies Voorwerp 1</option></select>
             <select id="item-select-2"><option value="">Kies Voorwerp 2</option></select>
             <button onclick="tryCombination()">Probeer Combinatie</button>
@@ -124,19 +149,15 @@
     </div>
 
     <div class="version-footer">
-        De Kraak van de Eeuw — Versie 1.2
+        De Kraak van de Eeuw — Engine Versie 1.5
     </div>
 
     <script>
-        // --- INSTELLINGEN ---
         const SHEET_ID = '1559c0QnlkTWafVqvRhixHXww-bCs6mSvh10BIVDGXVU';
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbysNb1du-ujs-hKVCwxbKlUYa31sPA8NKPZKUxvxtrr-FH01nZEY7EdW2Y03XyxPPT6/exec"; 
 
-        // --- SPEL DATA ---
         let knownItems = {}; 
         let combinations = {}; 
         
-        // --- SPELER DATA ---
         let teamName = "";
         let inventory = []; 
         let startTime = null;
@@ -148,15 +169,233 @@
             setInterval(updateTimerUI, 1000);
         };
 
+        function setConnectionStatus(connected) {
+            const dot = document.getElementById('connection-indicator');
+            if (connected) {
+                dot.classList.add('connected');
+            } else {
+                dot.classList.remove('connected');
+            }
+        }
+
         function fetchGameData() {
+            setConnectionStatus(false);
             document.getElementById('retry-btn').style.display = 'none';
             const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Escape+Room+Kamp+-+Bankroof+Combinaties&_=${Date.now()}`;
             
             fetch(CSV_URL)
                 .then(response => {
-                    if (!response.ok) throw new Error("Netwerkfout bij ophalen kluis");
+                    if (!response.ok) throw new Error("Netwerkfout");
                     return response.text();
                 })
                 .then(csvText => {
                     parseGameData(csvText);
-                    if (Object.keys(knownItems).length === 0) throw new Error("Geen geldige data ver
+                    if (Object.keys(knownItems).length === 0) throw new Error("Geen data");
+                    
+                    setConnectionStatus(true);
+                    document.getElementById('loading-screen').classList.remove('active');
+                    if (loadLocalState()) {
+                        updateUI();
+                        showScreen('main-screen');
+                    } else {
+                        showScreen('login-screen');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    setConnectionStatus(false);
+                    document.getElementById('retry-btn').style.display = 'block';
+                    alert("Kan geen verbinding maken met de kluis. Controleer de netwerkverbinding.");
+                });
+        }
+
+        function startGame() {
+            const name = document.getElementById('team-name').value.trim();
+            if(!name) return alert("Vul een teamnaam in!");
+            teamName = name;
+            startTime = Date.now();
+            penaltyMinutes = 0;
+            inventory = [];
+            saveLocalState();
+            updateUI();
+            showScreen('main-screen');
+        }
+
+        function openScanner() {
+            showScreen('scanner-screen');
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+                fps: 10, 
+                qrbox: {width: 250, height: 250}, 
+                aspectRatio: 1.0, 
+                videoConstraints: { facingMode: "environment" } 
+            }, false);
+            html5QrcodeScanner.render(onScanSuccess, (err) => {});
+        }
+
+        function closeScanner() {
+            if(html5QrcodeScanner) html5QrcodeScanner.clear();
+            showScreen('main-screen');
+        }
+
+        function onScanSuccess(decodedText) {
+            closeScanner();
+            const scannedId = parseInt(decodedText);
+            
+            if (knownItems[scannedId]) {
+                if (inventory.find(i => i.id === scannedId)) {
+                    alert("Je hebt dit voorwerp al in je inventaris!");
+                } else {
+                    inventory.push({ id: scannedId, name: knownItems[scannedId] });
+                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                    alert(`Gevonden: ${knownItems[scannedId]}!`);
+                    saveLocalState();
+                }
+            } else {
+                alert("QR Code niet herkend.");
+            }
+            updateUI();
+        }
+
+        function openCombine() {
+            const sel1 = document.getElementById('item-select-1');
+            const sel2 = document.getElementById('item-select-2');
+            sel1.innerHTML = '<option value="">Kies Voorwerp 1</option>';
+            sel2.innerHTML = '<option value="">Kies Voorwerp 2</option>';
+            
+            inventory.forEach(item => {
+                sel1.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+                sel2.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+            });
+            showScreen('combine-screen');
+        }
+
+        function tryCombination() {
+            const id1 = document.getElementById('item-select-1').value;
+            const id2 = document.getElementById('item-select-2').value;
+
+            if(!id1 || !id2) return alert("Kies twee voorwerpen!");
+            if(id1 === id2) return alert("Je kunt een voorwerp niet met zichzelf combineren!");
+
+            const comboKey = `${id1}_${id2}`;
+            if (combinations[comboKey]) {
+                const result = combinations[comboKey];
+                
+                // REGELEMENT 2: Gescande items blijven behouden, voeg enkel Item C toe.
+                if (!inventory.find(i => i.id === result.resId)) {
+                    inventory.push({ id: result.resId, name: result.resName });
+                }
+
+                document.getElementById('story-title').innerText = "Succes: " + result.resName;
+                document.getElementById('story-text').innerText = result.story;
+                document.getElementById('story-hint').innerText = result.hint;
+                
+                saveLocalState();
+                updateUI(); 
+                showScreen('story-screen');
+            } else {
+                penaltyMinutes++;
+                alert("Helaas, deze combinatie levert niets op! (+1 Minuut straftijd)");
+                saveLocalState();
+                updateUI();
+                showScreen('main-screen');
+            }
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function updateUI() {
+            document.getElementById('display-team').innerText = teamName;
+            const list = document.getElementById('inventory-list');
+            list.innerHTML = '';
+            if(inventory.length === 0) list.innerHTML = '<li>Nog geen voorwerpen.</li>';
+            inventory.forEach(item => {
+                list.innerHTML += `<li>${item.name} <span>#${item.id}</span></li>`;
+            });
+            updateTimerUI();
+        }
+
+        function updateTimerUI() {
+            if(!startTime) return;
+            const elapsedMs = Date.now() - startTime;
+            const totalSeconds = Math.floor(elapsedMs / 1000) + (penaltyMinutes * 60);
+            const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+            const s = (totalSeconds % 60).toString().padStart(2, '0');
+            document.getElementById('time-display').innerText = `${m}:${s}`;
+        }
+
+        // LINE-BREAK VEILIGE RFC-COMPLIANTE PARSER
+        function parseGameData(csvText) {
+            let lines = [];
+            let row = [""];
+            let inQuotes = false;
+
+            for (let i = 0; i < csvText.length; i++) {
+                let char = csvText[i];
+                let nextChar = csvText[i + 1];
+
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        row[row.length - 1] += '"';
+                        i++; 
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    row.push("");
+                } else if ((char === '\n' || char === '\r') && !inQuotes) {
+                    if (char === '\r' && nextChar === '\n') { i++; }
+                    lines.push(row);
+                    row = [""];
+                } else {
+                    row[row.length - 1] += char;
+                }
+            }
+            if (row.length > 1 || row[0] !== "") lines.push(row);
+
+            lines.forEach((cols, index) => {
+                if (index === 0) return; 
+                const cleanCols = cols.map(v => v.trim().replace(/^"|"$/g, ''));
+                if (cleanCols.length < 7) return;
+
+                let idA = parseInt(cleanCols[1]); let naamA = cleanCols[2];
+                let idB = parseInt(cleanCols[4]); let naamB = cleanCols[5];
+                let resId = parseInt(cleanCols[6]); let resNaam = cleanCols[7];
+                let story = cleanCols[8] || ""; let hint = cleanCols[9] || "";
+
+                if (isNaN(idA) && !isNaN(parseInt(cleanCols[0]))) {
+                    idA = parseInt(cleanCols[0]); naamA = cleanCols[1];
+                    idB = parseInt(cleanCols[2]); naamB = cleanCols[3];
+                    resId = parseInt(cleanCols[4]); resNaam = cleanCols[5];
+                    story = cleanCols[6] || ""; hint = cleanCols[7] || "";
+                }
+
+                if(!isNaN(idA) && naamA) knownItems[idA] = naamA;
+                if(!isNaN(idB) && naamB) knownItems[idB] = naamB;
+                if(!isNaN(resId) && resNaam) {
+                    knownItems[resId] = resNaam;
+                    combinations[`${idA}_${idB}`] = { resId, resName: resNaam, story, hint };
+                    combinations[`${idB}_${idA}`] = { resId, resName: resNaam, story, hint }; 
+                }
+            });
+        }
+
+        function saveLocalState() {
+            localStorage.setItem('kraak_state', JSON.stringify({ teamName, inventory, startTime, penaltyMinutes }));
+        }
+
+        function loadLocalState() {
+            const saved = localStorage.getItem('kraak_state');
+            if(saved) {
+                const state = JSON.parse(saved);
+                teamName = state.teamName; inventory = state.inventory; 
+                startTime = state.startTime; penaltyMinutes = state.penaltyMinutes;
+                return true;
+            }
+            return false;
+        }
+    </script>
+</body>
+</html>

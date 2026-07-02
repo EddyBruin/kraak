@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>De Kraak van de Eeuw</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        :root {
+            --bg: #121212; --surface: #1e1e1e; --primary: #03dac6; 
+            --error: #cf6679; --text: #e0e0e0; --muted: #9e9e9e;
+        }
+        body {
+            background-color: var(--bg); color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 16px;
+            overscroll-behavior-y: contain;
+        }
+        .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 500px; margin: 0 auto; text-align: center; }
+        .screen.active { display: flex; }
+        
+        .header { width: 100%; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 12px; margin-bottom: 20px; }
+        .header h2 { margin: 0; font-size: 1.2rem; color: var(--primary); }
+        .time { font-family: monospace; font-size: 1.2rem; font-weight: bold; color: var(--error); }
+        
+        button { background: var(--primary); color: #000; border: none; padding: 14px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 12px; }
+        button.secondary { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+        button.danger { background: transparent; color: var(--error); border: 2px solid var(--error); margin-top: 20px;}
+        
+        input, select { width: 100%; padding: 14px; margin-bottom: 16px; background: var(--surface); color: white; border: 1px solid #333; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        
+        .card { background: var(--surface); padding: 16px; border-radius: 8px; width: 100%; box-sizing: border-box; margin-bottom: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align: left;}
+        .card h3 { margin-top: 0; color: var(--primary); }
+        
+        ul { list-style: none; padding: 0; margin: 0; width: 100%; }
+        li { background: #2c2c2c; padding: 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; font-weight: 500; }
+        
+        #reader { width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 16px; transform: translateZ(0); }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen" class="screen active">
+        <h2>Speldata Laden...</h2>
+        <p>Even geduld, we maken verbinding met de kluis.</p>
+        <button id="retry-btn" class="secondary" style="display:none;" onclick="fetchGameData()">Opnieuw Proberen</button>
+    </div>
+
+    <div id="login-screen" class="screen">
+        <h2>De Kraak van de Eeuw</h2>
+        <p>Voer jullie teamnaam in om de missie te starten. Zodra je start, gaat de tijd lopen!</p>
+        <input type="text" id="team-name" placeholder="Teamnaam (bijv. Groep 1)">
+        <button onclick="startGame()">Start Missie</button>
+    </div>
+
+    <div id="main-screen" class="screen">
+        <div class="header">
+            <h2 id="display-team">Team</h2>
+            <div class="time" id="time-display">00:00</div>
+        </div>
+
+        <button onclick="openScanner()">Scan Nieuw Voorwerp (QR)</button>
+        <button class="secondary" onclick="openCombine()">Combineer Voorwerpen</button>
+
+        <div class="card">
+            <h3>Jullie Inventaris</h3>
+            <ul id="inventory-list"></ul>
+        </div>
+    </div>
+
+    <div id="scanner-screen" class="screen">
+        <h2>Scan QR Code</h2>
+        <div id="reader"></div>
+        <button class="secondary" onclick="closeScanner()">Annuleren</button>
+    </div>
+
+    <div id="combine-screen" class="screen">
+        <h2>Combineer Items</h2>
+        <p>Kies twee items uit je inventaris. Een foute combinatie kost je 1 minuut straftijd!</p>
+        <select id="item-select-1"><option value="">Kies Voorwerp 1</option></select>
+        <select id="item-select-2"><option value="">Kies Voorwerp 2</option></select>
+        <button onclick="tryCombination()">Probeer Combinatie</button>
+        <button class="secondary" onclick="showScreen('main-screen')">Terug</button>
+    </div>
+
+    <div id="story-screen" class="screen">
+        <div class="card">
+            <h3 id="story-title">Resultaat</h3>
+            <p id="story-text"></p>
+            <p><strong style="color:var(--primary)">Hint:</strong> <span id="story-hint"></span></p>
+        </div>
+        <button onclick="showScreen('main-screen')">Begrepen, ga door!</button>
+    </div>
+
+    <script>
+        // --- INSTELLINGEN ---
+        const SHEET_ID = '1559c0QnlkTWafVqvRhixHXww-bCs6mSvh10BIVDGXVU';
+
+        // --- SPEL DATA ---
+        let knownItems = {}; // { id: "Naam" }
+        let combinations = {}; // { "idA_idB": { resId, resName, story, hint } }
+        
+        // --- SPELER DATA ---
+        let teamName = "";
+        let inventory = []; // [{id: 12, name: "Zaklamp"}]
+        let startTime = null;
+        let penaltyMinutes = 0;
+        let html5QrcodeScanner = null;
+
+        window.onload = () => {
+            fetchGameData();
+            setInterval(updateTimerUI, 1000);
+        };
+
+        // Fetch data met cache-busting (voorkomt vastlopen op oude foutmeldingen)
+        function fetchGameData() {
+            document.getElementById('retry-btn').style.display = 'none';
+            // De ?_=[tijd] zorgt ervoor dat de browser niet stiekem een oude gecachete versie inlaadt
+            const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Escape+Room+Kamp+-+Bankroof+Combinaties&_=${Date.now()}`;
+            
+            fetch(CSV_URL)
+                .then(response => {
+                    if (!response.ok) throw new Error("Netwerk response was niet OK");
+                    return response.text();
+                })
+                .then(csvText => {
+                    parseGameData(csvText);
+                    if (Object.keys(knownItems).length === 0) throw new Error("Geen items gevonden in Sheet");
+                    
+                    document.getElementById('loading-screen').classList.remove('active');
+                    if (loadLocalState()) {
+                        updateUI();
+                        showScreen('main-screen');
+                    } else {
+                        showScreen('login-screen');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('retry-btn').style.display = 'block';
+                    alert("Fout bij laden van speldata. Controleer je internetverbinding en probeer opnieuw.");
+                });
+        }
+
+        function startGame() {
+            const name = document.getElementById('team-name').value.trim();
+            if(!name) return alert("Vul een teamnaam in!");
+            teamName = name;
+            startTime = Date.now();
+            penaltyMinutes = 0;
+            inventory = [];
+            saveLocalState();
+            updateUI();
+            showScreen('main-screen');
+        }
+
+        function openScanner() {
+            showScreen('scanner-screen');
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0, videoConstraints: { facingMode: "environment" } }, false);
+            html5QrcodeScanner.render(onScanSuccess, (err) => {/* Negeer continue errors */});
+        }
+
+        function closeScanner() {
+            if(html5QrcodeScanner) html5QrcodeScanner.clear();
+            showScreen('main-screen');
+        }
+
+        function onScanSuccess(decodedText) {
+            closeScanner();
+            const scannedId = parseInt(decodedText);
+            
+            if (knownItems[scannedId]) {
+                const hasBlueprint = inventory.find(i => i.id === 1);
+                
+                if (scannedId !== 1 && !hasBlueprint) {
+                    alert("⚠️ Je moet eerst de Blauwdruk (Item 1) vinden voordat je andere voorwerpen kunt meenemen!");
+                    updateUI();
+                    return; 
+                }
+
+                if (inventory.find(i => i.id === scannedId)) {
+                    alert("Je hebt dit voorwerp al in je inventaris!");
+                } else {
+                    inventory.push({ id: scannedId, name: knownItems[scannedId] });
+                    // Trillen indien ondersteund
+                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                    alert(`Gevonden: ${knownItems[scannedId]}!`);
+                    saveLocalState();
+                }
+            } else {
+                alert("QR Code niet herkend of ongeldig in dit spel.");
+            }
+            updateUI();
+        }
+
+        function openCombine() {
+            const sel1 = document.getElementById('item-select-1');
+            const sel2 = document.getElementById('item-select-2');
+            sel1.innerHTML = '<option value="">Kies Voorwerp 1</option>';
+            sel2.innerHTML = '<option value="">Kies Voorwerp 2</option>';
+            
+            inventory.forEach(item => {
+                sel1.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+                sel2.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+            });
+            showScreen('combine-screen');
+        }
+
+        function tryCombination() {
+            const id1 = document.getElementById('item-select-1').value;
+            const id2 = document.getElementById('item-select-2').value;
+
+            if(!id1 || !id2) return alert("Kies twee voorwerpen!");
+            if(id1 === id2) return alert("Je kunt een voorwerp niet met zichzelf combineren!");
+
+            const comboKey = `${id1}_${id2}`;
+            if (combinations[comboKey]) {
+                const result = combinations[comboKey];
+                
+                // NIEUW: De oude items worden niet meer verwijderd!
+                // We voegen alleen het nieuwe item toe als ze die nog niet hebben
+                if (!inventory.find(i => i.id === result.resId)) {
+                    inventory.push({ id: result.resId, name: result.resName });
+                }
+
+                document.getElementById('story-title').innerText = "Succes: " + result.resName;
+                document.getElementById('story-text').innerText = result.story;
+                document.getElementById('story-hint').innerText = result.hint;
+                
+                saveLocalState();
+                showScreen('story-screen');
+            } else {
+                penaltyMinutes++;
+                alert("Helaas, deze combinatie levert niets op! (+1 Minuut straftijd)");
+                saveLocalState();
+                showScreen('main-screen');
+            }
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function updateUI() {
+            document.getElementById('display-team').innerText = teamName;
+            const list = document.getElementById('inventory-list');
+            list.innerHTML = '';
+            if(inventory.length === 0) list.innerHTML = '<li>Nog geen voorwerpen.</li>';
+            inventory.forEach(item => {
+                list.innerHTML += `<li>${item.name} <span>#${item.id}</span></li>`;
+            });
+            updateTimerUI();
+        }
+
+        function updateTimerUI() {
+            if(!startTime) return;
+            const elapsedMs = Date.now() - startTime;
+            const totalSeconds = Math.floor(elapsedMs / 1000) + (penaltyMinutes * 60);
+            const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+            const s = (totalSeconds % 60).toString().padStart(2, '0');
+            document.getElementById('time-display').innerText = `${m}:${s}`;
+        }
+
+        function parseGameData(csvText) {
+            const lines = csvText.split('\n');
+            lines.forEach(line => {
+                if(!line.trim()) return;
+                let cleaned = line.trim();
+                if(cleaned.startsWith('"') && cleaned.endsWith('"')) {
+                    cleaned = cleaned.substring(1, cleaned.length - 1);
+                }
+                const cols = cleaned.split('","');
+                if(cols.length < 9) return;
+
+                let idA = parseInt(cols[1]); let naamA = cols[2];
+                let idB = parseInt(cols[4]); let naamB = cols[5];
+                let resId = parseInt(cols[6]); let resNaam = cols[7];
+                let story = cols[8]; let hint = cols[9];
+
+                if(!isNaN(idA)) knownItems[idA] = naamA;
+                if(!isNaN(idB)) knownItems[idB] = naamB;
+                if(!isNaN(resId)) {
+                    knownItems[resId] = resNaam;
+                    combinations[`${idA}_${idB}`] = { resId, resName: resNaam, story, hint };
+                    combinations[`${idB}_${idA}`] = { resId, resName: resNaam, story, hint }; 
+                }
+            });
+        }
+
+        function saveLocalState() {
+            localStorage.setItem('kraak_state', JSON.stringify({ teamName, inventory, startTime, penaltyMinutes }));
+        }
+
+        function loadLocalState() {
+            const saved = localStorage.getItem('kraak_state');
+            if(saved) {
+                const state = JSON.parse(saved);
+                teamName = state.teamName; inventory = state.inventory; 
+                startTime = state.startTime; penaltyMinutes = state.penaltyMinutes;
+                return true;
+            }
+            return false;
+        }
+    </script>
+</body>
+</html>

@@ -305,8 +305,8 @@
                 <div class="time" id="time-display">00:00</div>
             </div>
 
-            <button onclick="openScanner()">⌕ Scan Nieuw Voorwerp (QR)</button>
-            <button class="secondary" onclick="openCombine()">⚙ Combineer Voorwerpen</button>
+            <button onclick="openScanner()">⌕ Scan nieuwe QR code</button>
+            <button class="secondary" onclick="openCombine()">⚙ Combineer items</button>
 
             <!-- HINTS KNOP (Dynamisch zichtbaar) -->
             <button id="hints-btn" class="secondary" style="display:none; margin-bottom: 16px;" onclick="showScreen('hints-screen')">Lees alle hints (0)</button>
@@ -362,7 +362,6 @@
             <div class="card">
                 <h3 id="story-title">Resultaat</h3>
                 <p id="story-text" style="white-space: pre-line;"></p>
-                <p><strong style="color:var(--primary)">Omschrijving:</strong> <span id="story-hint"></span></p>
             </div>
             <button onclick="showScreen('main-screen')">Begrepen, ga door!</button>
         </div>
@@ -452,9 +451,15 @@
 
         function openScanner() {
             showScreen('scanner-screen');
-            html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+            const scannerConfig = { 
                 fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0, videoConstraints: { facingMode: "environment" } 
-            }, false);
+            };
+            // Beperk de scanner tot alleen de camera (geen "kies afbeelding"-optie),
+            // maar val niet om als deze instelling in deze build niet bestaat.
+            if (typeof Html5QrcodeScanType !== 'undefined') {
+                scannerConfig.supportedScanTypes = [Html5QrcodeScanType.SCAN_TYPE_CAMERA];
+            }
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", scannerConfig, false);
             html5QrcodeScanner.render(onScanSuccess, (err) => {});
         }
 
@@ -478,6 +483,19 @@
                     alert(`Gevonden: ${knownItems[scannedId].name}! ${isHint ? "(Toegevoegd aan Hints)" : ""}`);
                     
                     saveLocalState();
+                }
+
+                // Speciale check voor "De rode knop": pas hierna inbreken als alle
+                // benodigde voorwerpen verzameld zijn.
+                if (scannedId === 236) {
+                    const benodigdeIds = [227, 229, 232, 235];
+                    const ontbrekendeNamen = benodigdeIds
+                        .filter(id => !inventory.find(i => i.id === id))
+                        .map(id => (knownItems[id] && knownItems[id].name) ? knownItems[id].name : `Voorwerp #${id}`);
+
+                    if (ontbrekendeNamen.length > 0) {
+                        alert(`Waarschuwing! Jullie missen nog voorwerpen, maar het lukt nog net om in te breken.\n\nNog niet verzameld: ${ontbrekendeNamen.join(', ')}`);
+                    }
                 }
             } else {
                 alert("QR Code niet herkend.");
@@ -519,7 +537,6 @@
 
                 document.getElementById('story-title').innerText = "Succes: " + result.resName;
                 document.getElementById('story-text').innerText = result.story;
-                document.getElementById('story-hint').innerText = result.hint;
                 
                 saveLocalState();
                 updateUI(); 
@@ -579,8 +596,7 @@
                     invCount++;
                     invList.innerHTML += `
                         <li onclick="showItemModal(${item.id})">
-                            <span>${item.name} <span class="click-hint">(bekijk)</span></span> 
-                            <span>#${item.id}</span>
+                            <span>${item.name} <span class="click-hint">(bekijk)</span></span>
                         </li>`;
                 }
             });
@@ -662,7 +678,6 @@
                 let resId = parseInt(cleanCols[6 + offset]);
                 let resNaam = cleanCols[7 + offset];
                 let story = cleanCols[8 + offset] || "";
-                let hintText = cleanCols[9 + offset] || "";
                 
                 // Kolom K bevat de type-informatie
                 let typeInfo = cleanCols[10 + offset] ? cleanCols[10 + offset].toLowerCase().trim() : "inventaris";
@@ -670,8 +685,8 @@
                 // Leg alle gevonden ID's vast, inclusief types en verhalen
                 if (!isNaN(resId) && resNaam) {
                     knownItems[resId] = { name: resNaam, type: typeInfo, story: story };
-                    combinations[`${idA}_${idB}`] = { resId, resName: resNaam, story, hint: hintText };
-                    combinations[`${idB}_${idA}`] = { resId, resName: resNaam, story, hint: hintText };
+                    combinations[`${idA}_${idB}`] = { resId, resName: resNaam, story };
+                    combinations[`${idB}_${idA}`] = { resId, resName: resNaam, story };
                     
                     // Zorg dat de basis voorwerpen ook altijd een fallback hebben in de dictionary
                     if (!knownItems[idA]) knownItems[idA] = { name: naamA, type: "inventaris", story: "" };
@@ -707,14 +722,23 @@
 
     <!-- ============================================================
          HEIST AUDIO-ENGINE (los blok, raakt bovenstaande spellogica niet aan)
-         Volledig zelf-gesynthetiseerd via Web Audio API: geen externe
-         geluidsbestanden nodig, dus geen extra netwerk- of copyright-risico.
+         Gebruikt een echte, rechtenvrije muzieksample in een loop:
+         "Stay the Course" door Kevin MacLeod (incompetech.com),
+         gelicenseerd onder Creative Commons: By Attribution 4.0
+         (http://creativecommons.org/licenses/by/4.0/).
+         Lukt het laden van de sample niet (bv. geen internetverbinding),
+         dan valt de app automatisch terug op een zelf-gesynthetiseerde
+         spanningsloop via de Web Audio API, zodat er altijd geluid is.
          ============================================================ -->
     <script>
+        const MUSIC_TRACK_URL = 'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Stay%20the%20Course.mp3';
+
         let audioCtx = null;
-        let musicNodes = null;
         let musicMuted = (localStorage.getItem('kraak_muted') === '1');
         let musicStarted = false;
+        let bgMusicEl = null;
+        let fallbackNodes = null;
+        let usingFallback = false;
 
         function ensureAudioCtx() {
             if (!audioCtx) {
@@ -728,9 +752,31 @@
 
         // Start de gespannen achtergrondmuziek zodra het team op "Start Missie" drukt.
         function startHeistAudio() {
-            const ctx = ensureAudioCtx();
-            if (!ctx || musicStarted) return;
+            if (musicStarted) return;
             musicStarted = true;
+
+            bgMusicEl = new Audio(MUSIC_TRACK_URL);
+            bgMusicEl.loop = true;
+            bgMusicEl.volume = musicMuted ? 0 : 0.35;
+            bgMusicEl.preload = 'auto';
+
+            // Als de echte sample niet kan laden of afspelen (netwerk, autoplay-restricties,
+            // enz.), valt de app terug op de zelf-gesynthetiseerde loop zodat het spannende
+            // gevoel er sowieso is.
+            bgMusicEl.addEventListener('error', startFallbackAudio);
+            bgMusicEl.play().catch(startFallbackAudio);
+        }
+
+        function startFallbackAudio() {
+            if (usingFallback) return;
+            usingFallback = true;
+            if (bgMusicEl) {
+                bgMusicEl.pause();
+                bgMusicEl = null;
+            }
+
+            const ctx = ensureAudioCtx();
+            if (!ctx) return;
 
             const master = ctx.createGain();
             master.gain.value = musicMuted ? 0 : 0.16;
@@ -757,7 +803,6 @@
             pulseOsc.connect(pulseGain).connect(master);
             pulseOsc.start();
 
-            let pulseStep = 0;
             const pulseTimer = setInterval(() => {
                 if (!audioCtx) return;
                 const t = ctx.currentTime;
@@ -765,7 +810,6 @@
                 pulseGain.gain.setValueAtTime(pulseGain.gain.value, t);
                 pulseGain.gain.linearRampToValueAtTime(0.22, t + 0.05);
                 pulseGain.gain.linearRampToValueAtTime(0, t + 0.35);
-                pulseStep++;
             }, 900);
 
             // Sluipende, dissonante arpeggio-lijn (het "aftellen")
@@ -790,18 +834,25 @@
                 osc.stop(t + 0.5);
             }, 500);
 
-            musicNodes = { master, drone, pulseOsc, pulseTimer, arpTimer };
+            fallbackNodes = { master, drone, pulseOsc, pulseTimer, arpTimer };
         }
 
         function toggleMute() {
             musicMuted = !musicMuted;
             localStorage.setItem('kraak_muted', musicMuted ? '1' : '0');
-            if (musicNodes && musicNodes.master && audioCtx) {
-                musicNodes.master.gain.setTargetAtTime(musicMuted ? 0 : 0.16, audioCtx.currentTime, 0.05);
+
+            if (bgMusicEl) {
+                bgMusicEl.volume = musicMuted ? 0 : 0.35;
             }
+            if (fallbackNodes && fallbackNodes.master && audioCtx) {
+                fallbackNodes.master.gain.setTargetAtTime(musicMuted ? 0 : 0.16, audioCtx.currentTime, 0.05);
+            }
+
             document.getElementById('mute-icon-on').style.display = musicMuted ? 'none' : 'block';
             document.getElementById('mute-icon-off').style.display = musicMuted ? 'block' : 'none';
-            // Als er nog geen muziek draait (bv. voor de start van de missie), toch de audiocontext alvast ontgrendelen.
+
+            // Als er nog geen muziek draait (bv. voor de start van de missie), toch alvast
+            // de audiocontext ontgrendelen zodat geluid direct werkt zodra het spel start.
             if (!musicMuted) ensureAudioCtx();
         }
 
@@ -904,5 +955,9 @@
             }
         };
     </script>
+
+    <div class="version-footer" style="margin-top:8px; opacity:0.5; font-size:0.65rem; text-transform:none; letter-spacing:0.02em;">
+        Muziek: "Stay the Course" door Kevin MacLeod (incompetech.com) — CC BY 4.0
+    </div>
 </body>
 </html>

@@ -59,13 +59,26 @@
         }
         .header h2 { margin: 0; font-size: 1.6rem; color: var(--primary); z-index: 1; text-shadow: 0 0 12px rgba(201,160,52,0.35); padding-left: 42px; }
         .header-mask { position: absolute; left: 0; top: -6px; opacity: 0.9; }
+        
+        .time-container {
+            position: absolute; left: 50%; transform: translateX(-50%); z-index: 1;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+        }
+        
         .time { 
             font-family: 'Share Tech Mono', monospace; font-size: 1.3rem; font-weight: bold; color: var(--error); 
-            position: absolute; left: 50%; transform: translateX(-50%); z-index: 1;
             background: var(--bg-deep); border: 1px solid var(--resistance-dark); padding: 4px 12px; border-radius: 4px;
             letter-spacing: 0.15em; box-shadow: 0 0 10px rgba(255,75,62,0.35), inset 0 0 6px rgba(255,75,62,0.25);
             animation: tickGlow 1.6s ease-in-out infinite;
         }
+
+        .lives-display {
+            font-size: 1.2rem; cursor: pointer; user-select: none;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+            transition: transform 0.1s;
+        }
+        .lives-display:active { transform: scale(0.9); }
+
         @keyframes tickGlow {
             0%, 100% { box-shadow: 0 0 10px rgba(255,75,62,0.35), inset 0 0 6px rgba(255,75,62,0.25); }
             50% { box-shadow: 0 0 16px rgba(255,75,62,0.6), inset 0 0 8px rgba(255,75,62,0.4); }
@@ -190,6 +203,8 @@
 </head>
 <body>
 
+    <audio id="heist-bg-music" src="https://incompetech.com/music/royalty-free/mp3-royaltyfree/Stay%20the%20Course.mp3" loop preload="auto" style="display:none;"></audio>
+
     <svg width="0" height="0" style="position:absolute">
         <defs>
             <symbol id="svg-mask" viewBox="0 0 100 120">
@@ -243,7 +258,10 @@
             <div class="header">
                 <svg class="mask-icon small header-mask"><use href="#svg-mask"/></svg>
                 <h2 id="display-team">Team</h2>
-                <div class="time" id="time-display">00:00</div>
+                <div class="time-container">
+                    <div class="time" id="time-display">00:00</div>
+                    <div class="lives-display" id="lives-display" onclick="loseLife()" title="Tik om een leven te verliezen">❤️❤️❤️</div>
+                </div>
             </div>
 
             <button onclick="openScanner()">⌕ Scan nieuwe QR-code</button>
@@ -262,7 +280,10 @@
             <div class="header">
                 <svg class="mask-icon small header-mask"><use href="#svg-mask"/></svg>
                 <h2>Gevonden Hints</h2>
-                <div class="time" id="hints-time-display">00:00</div>
+                <div class="time-container">
+                    <div class="time" id="hints-time-display">00:00</div>
+                    <div class="lives-display hints-lives-display">❤️❤️❤️</div>
+                </div>
             </div>
             <div id="hints-list" style="width:100%; text-align:left; margin-bottom: 16px;"></div>
             <button class="secondary" onclick="showScreen('main-screen')">Terug naar Inventaris</button>
@@ -284,7 +305,10 @@
             <div class="header">
                 <svg class="mask-icon small header-mask"><use href="#svg-mask"/></svg>
                 <h2>Combineer</h2>
-                <div class="time" id="combine-time-display">00:00</div>
+                <div class="time-container">
+                    <div class="time" id="combine-time-display">00:00</div>
+                    <div class="lives-display combine-lives-display">❤️❤️❤️</div>
+                </div>
             </div>
             <p class="brand-sub" style="margin-bottom:12px;">Kies twee unieke items. Een foute combinatie kost 1 minuut straftijd!</p>
             <select id="item-select-1"><option value="">Kies Voorwerp 1</option></select>
@@ -313,7 +337,7 @@
     </div>
 
     <div class="version-footer">
-        De Kraak van de Eeuw — Engine Versie 1.9
+        De Kraak van de Eeuw — Engine Versie 2.0
     </div>
 
     <script>
@@ -328,6 +352,7 @@
         let inventory = []; 
         let startTime = null;
         let penaltyMinutes = 0;
+        let lives = 3; // Startaantal levens
         let html5QrcodeScanner = null;
 
         window.onload = () => {
@@ -341,6 +366,19 @@
         }
 
         // --- DATABASE SYNC LOGICA ---
+        function calculateTeamStatus() {
+            const benodigdeIds = [227, 229, 232, 235];
+            const ontbrekendeNamen = benodigdeIds
+                .filter(id => !inventory.find(i => i.id === id))
+                .map(id => (knownItems[id] && knownItems[id].name) ? knownItems[id].name : `Item #${id}`);
+
+            if (ontbrekendeNamen.length > 0) {
+                return "Mist: " + ontbrekendeNamen.join(', ');
+            } else {
+                return "Klaar om in te breken!";
+            }
+        }
+
         function syncToDatabase() {
             if(!WEB_APP_URL || !teamName) return; 
 
@@ -357,6 +395,8 @@
                     team: teamName,
                     timeFormatted: `${m}:${s}`,
                     penalty: penaltyMinutes,
+                    lives: lives,
+                    status: calculateTeamStatus(),
                     inventory: inventory
                 })
             }).catch(e => console.log("Achtergrondsync mislukt:", e));
@@ -370,7 +410,6 @@
             retryBtn.style.display = 'none';
             msgEl.innerText = 'De verbinding met de kluis wordt gecontroleerd...';
             
-            // Gebruik encodeURIComponent om te voorkomen dat de URL 'breekt'
             const sheetNameEnc = encodeURIComponent('Escape Room Kamp - Bankroof Combinaties');
             const cacheBuster = Math.floor(Date.now() / 10000); 
             const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheetNameEnc}&_cache=${cacheBuster}`;
@@ -381,7 +420,6 @@
                     return response.text();
                 })
                 .then(csvText => {
-                    // Check of Google per ongeluk een inlog-pagina stuurt
                     if (csvText.trim().toLowerCase().startsWith('<!doctype html>') || csvText.includes('<html')) {
                         throw new Error("De Sheet lijkt niet meer openbaar (HTML teruggekregen).");
                     }
@@ -415,11 +453,36 @@
             teamName = name;
             startTime = Date.now();
             penaltyMinutes = 0;
+            lives = 3;
             inventory = [];
             saveLocalState();
             syncToDatabase();
             updateUI();
             showScreen('main-screen');
+        }
+
+        function loseLife() {
+            if(confirm("Heeft de Infiltrant jullie betrapt? Tik op OK om een leven in te leveren.")) {
+                lives--;
+                playSfx('error');
+                
+                if (lives <= 0) {
+                    alert("⚠️ JULLIE ZIJN GEARRESTEERD! ⚠️\n\nAlle bewijsstukken in jullie inventaris zijn in beslag genomen! Jullie zullen deze opnieuw moeten verzamelen. De gevonden hints blijven wel bewaard in jullie notitieblokje.");
+                    
+                    // Filter de inventaris en behoud alleen de hints
+                    inventory = inventory.filter(item => {
+                        const itemData = knownItems[item.id] || { type: 'inventaris' };
+                        return itemData.type.includes('hint');
+                    });
+                    
+                    // Reset levens
+                    lives = 3;
+                }
+                
+                saveLocalState();
+                syncToDatabase();
+                updateUI();
+            }
         }
 
         function openScanner() {
@@ -603,6 +666,12 @@
                 hintsBtn.style.display = 'none';
             }
 
+            // Update hartjes
+            const heartsStr = '❤️'.repeat(lives) + '🖤'.repeat(3 - lives);
+            document.querySelectorAll('.lives-display').forEach(el => {
+                el.innerText = heartsStr;
+            });
+
             updateTimerUI();
         }
 
@@ -656,10 +725,8 @@
                 if (index === 0) return; 
                 const cleanCols = cols.map(v => (v || "").trim().replace(/^"|"$/g, ''));
                 
-                // Opvullen zodat rijen met te weinig kolommen niet crashen
                 while(cleanCols.length < 12) cleanCols.push("");
 
-                // Automatisch opschuiven als kolom A (index 0) leeg is
                 let offset = 0;
                 if (isNaN(parseInt(cleanCols[1])) && !isNaN(parseInt(cleanCols[0]))) { offset = -1; }
 
@@ -680,7 +747,6 @@
                         combinations[`${idB}_${idA}`] = { resId, resName: resNaam, story };
                     }
                     
-                    // Fallback voor originele items, mochten deze zelf geen aparte datarij hebben
                     if (!isNaN(idA) && !knownItems[idA]) knownItems[idA] = { name: naamA || `Voorwerp #${idA}`, type: "inventaris", story: "" };
                     if (!isNaN(idB) && !knownItems[idB]) knownItems[idB] = { name: naamB || `Voorwerp #${idB}`, type: "inventaris", story: "" };
                 } 
@@ -696,15 +762,18 @@
         }
 
         function saveLocalState() {
-            localStorage.setItem('kraak_state', JSON.stringify({ teamName, inventory, startTime, penaltyMinutes }));
+            localStorage.setItem('kraak_state', JSON.stringify({ teamName, inventory, startTime, penaltyMinutes, lives }));
         }
 
         function loadLocalState() {
             const saved = localStorage.getItem('kraak_state');
             if(saved) {
                 const state = JSON.parse(saved);
-                teamName = state.teamName; inventory = state.inventory; 
-                startTime = state.startTime; penaltyMinutes = state.penaltyMinutes;
+                teamName = state.teamName; 
+                inventory = state.inventory || []; 
+                startTime = state.startTime; 
+                penaltyMinutes = state.penaltyMinutes || 0;
+                lives = state.lives !== undefined ? state.lives : 3;
                 return true;
             }
             return false;
@@ -712,14 +781,10 @@
     </script>
 
     <script>
-        const MUSIC_TRACK_URL = 'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Stay%20the%20Course.mp3';
-
         let audioCtx = null;
         let musicMuted = (localStorage.getItem('kraak_muted') === '1');
         let musicStarted = false;
         let bgMusicEl = null;
-        let fallbackNodes = null;
-        let usingFallback = false;
 
         function ensureAudioCtx() {
             if (!audioCtx) {
@@ -734,115 +799,27 @@
         function startHeistAudio() {
             if (musicStarted) return;
 
-            if (!bgMusicEl) {
-                bgMusicEl = new Audio(MUSIC_TRACK_URL);
-                bgMusicEl.loop = true;
-                bgMusicEl.preload = 'auto';
-                
-                bgMusicEl.addEventListener('error', startFallbackAudio);
-                
-                // Forceer handmatig een reset voor browsers (iOS Safari/Android Chrome) 
-                // die het afspelen droppen bij loop=true.
-                bgMusicEl.addEventListener('ended', function() {
-                    this.currentTime = 0;
-                    this.play().catch(()=>{});
-                }, false);
-            }
-            bgMusicEl.volume = musicMuted ? 0 : 0.35;
-
-            const playPromise = bgMusicEl.play();
-            if (playPromise && typeof playPromise.then === 'function') {
-                playPromise.then(() => {
-                    musicStarted = true;
-                }).catch(() => {
-                    // Wacht op gebruikersinteractie
-                });
-            } else {
-                musicStarted = true;
-            }
-        }
-
-        function startFallbackAudio() {
-            if (usingFallback) return;
-            usingFallback = true;
+            bgMusicEl = document.getElementById('heist-bg-music');
             if (bgMusicEl) {
-                bgMusicEl.pause();
-                bgMusicEl = null;
+                bgMusicEl.volume = musicMuted ? 0 : 0.35;
+                const playPromise = bgMusicEl.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        musicStarted = true;
+                    }).catch(() => {
+                        // Wacht op click interactie
+                    });
+                }
             }
-
-            const ctx = ensureAudioCtx();
-            if (!ctx) return;
-
-            const master = ctx.createGain();
-            master.gain.value = musicMuted ? 0 : 0.16;
-            master.connect(ctx.destination);
-
-            // Drone
-            const drone = ctx.createOscillator();
-            drone.type = 'sawtooth';
-            drone.frequency.value = 55;
-            const droneFilter = ctx.createBiquadFilter();
-            droneFilter.type = 'lowpass';
-            droneFilter.frequency.value = 220;
-            const droneGain = ctx.createGain();
-            droneGain.gain.value = 0.5;
-            drone.connect(droneFilter).connect(droneGain).connect(master);
-            drone.start();
-
-            // Pulse
-            const pulseOsc = ctx.createOscillator();
-            pulseOsc.type = 'sine';
-            pulseOsc.frequency.value = 110;
-            const pulseGain = ctx.createGain();
-            pulseGain.gain.value = 0;
-            pulseOsc.connect(pulseGain).connect(master);
-            pulseOsc.start();
-
-            // Voorkom 'Audio glitches' door steevast in de toekomst te plannen
-            const pulseTimer = setInterval(() => {
-                if (!audioCtx) return;
-                const t = ctx.currentTime + 0.05; 
-                pulseGain.gain.cancelScheduledValues(t);
-                pulseGain.gain.setValueAtTime(pulseGain.gain.value, t);
-                pulseGain.gain.linearRampToValueAtTime(0.22, t + 0.05);
-                pulseGain.gain.linearRampToValueAtTime(0, t + 0.35);
-            }, 900);
-
-            // Arpeggio
-            const arpNotes = [110, 130.8, 116.5, 138.6];
-            let arpIndex = 0;
-            const arpGain = ctx.createGain();
-            arpGain.gain.value = 0.08;
-            arpGain.connect(master);
-            const arpTimer = setInterval(() => {
-                if (!audioCtx) return;
-                const osc = ctx.createOscillator();
-                osc.type = 'triangle';
-                osc.frequency.value = arpNotes[arpIndex % arpNotes.length];
-                arpIndex++;
-                const g = ctx.createGain();
-                const t = ctx.currentTime + 0.05;
-                g.gain.setValueAtTime(0, t);
-                g.gain.linearRampToValueAtTime(0.9, t + 0.02);
-                g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-                osc.connect(g).connect(arpGain);
-                osc.start(t);
-                osc.stop(t + 0.5);
-            }, 500);
-
-            fallbackNodes = { master, drone, pulseOsc, pulseTimer, arpTimer };
-            musicStarted = true;
         }
 
         function toggleMute() {
             musicMuted = !musicMuted;
             localStorage.setItem('kraak_muted', musicMuted ? '1' : '0');
 
+            bgMusicEl = document.getElementById('heist-bg-music');
             if (bgMusicEl) {
                 bgMusicEl.volume = musicMuted ? 0 : 0.35;
-            }
-            if (fallbackNodes && fallbackNodes.master && audioCtx) {
-                fallbackNodes.master.gain.setTargetAtTime(musicMuted ? 0 : 0.16, audioCtx.currentTime, 0.05);
             }
 
             document.getElementById('mute-icon-on').style.display = musicMuted ? 'none' : 'block';
@@ -928,7 +905,8 @@
 
         function unlockAudioOnInteraction() {
             ensureAudioCtx();
-            if (bgMusicEl && bgMusicEl.paused && !musicMuted) {
+            bgMusicEl = document.getElementById('heist-bg-music');
+            if (bgMusicEl && bgMusicEl.paused && !musicMuted && startTime) {
                 bgMusicEl.play().then(() => { musicStarted = true; }).catch(() => {});
             }
             resumeAudioIfGameActive();

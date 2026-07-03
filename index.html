@@ -142,9 +142,7 @@
         .click-hint { font-size: 0.8rem; color: var(--primary); opacity: 0.7; }
         
         #reader { width: 100%; background: #000; border-radius: 10px; overflow: hidden; margin-bottom: 16px; transform: translateZ(0); border: 2px solid var(--primary-dim); }
-        
-        /* Camera-upload verbergen */
-        #reader__dashboard_section_swaplink, #reader__camera_selection + div, #reader input[type="file"], #reader button[id*="scan-image"] { display: none !important; }
+        #reader video { width: 100% !important; border-radius: 8px; }
 
         /* STATUS INDICATOR ALS BEWAKINGSLAMPJE */
         .status-dot {
@@ -305,7 +303,7 @@
                 <div class="time" id="time-display">00:00</div>
             </div>
 
-            <button onclick="openScanner()">⌕ Scan nieuwe QR code</button>
+            <button onclick="openScanner()">⌕ Scan nieuwe QR-code</button>
             <button class="secondary" onclick="openCombine()">⚙ Combineer items</button>
 
             <!-- HINTS KNOP (Dynamisch zichtbaar) -->
@@ -332,7 +330,7 @@
         <!-- Scanner Scherm -->
         <div id="scanner-screen" class="screen">
             <div class="brand-eyebrow">Doelwit lokaliseren</div>
-            <h2 style="color:var(--primary); margin-top:0;">Scan QR Code</h2>
+            <h2 style="color:var(--primary); margin-top:0;">Scan QR-code</h2>
             <div class="corner-frame" style="width:100%; position:relative;">
                 <div class="scan-sweep"></div>
                 <div id="reader"></div>
@@ -377,7 +375,7 @@
     </div>
 
     <div class="version-footer">
-        De Kraak van de Eeuw — Engine Versie 1.6
+        De Kraak van de Eeuw — Engine Versie 1.7
     </div>
 
     <script>
@@ -451,20 +449,26 @@
 
         function openScanner() {
             showScreen('scanner-screen');
-            const scannerConfig = { 
-                fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0, videoConstraints: { facingMode: "environment" } 
-            };
-            // Beperk de scanner tot alleen de camera (geen "kies afbeelding"-optie),
-            // maar val niet om als deze instelling in deze build niet bestaat.
-            if (typeof Html5QrcodeScanType !== 'undefined') {
-                scannerConfig.supportedScanTypes = [Html5QrcodeScanType.SCAN_TYPE_CAMERA];
-            }
-            html5QrcodeScanner = new Html5QrcodeScanner("reader", scannerConfig, false);
-            html5QrcodeScanner.render(onScanSuccess, (err) => {});
+            const qrEl = document.getElementById('reader');
+            qrEl.innerHTML = '';
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+                onScanSuccess,
+                () => {}
+            ).catch(() => {
+                alert("Kan geen toegang krijgen tot de camera. Controleer de camerarechten van deze browser.");
+                showScreen('main-screen');
+            });
         }
 
         function closeScanner() {
-            if(html5QrcodeScanner) html5QrcodeScanner.clear();
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop()
+                    .then(() => html5QrcodeScanner.clear())
+                    .catch(() => {});
+            }
             showScreen('main-screen');
         }
 
@@ -473,7 +477,21 @@
             const scannedId = parseInt(decodedText);
             
             if (knownItems[scannedId]) {
-                if (inventory.find(i => i.id === scannedId)) {
+                if (scannedId === 236) {
+                    // De rode knop wordt nooit opgeslagen in de inventaris, alleen gecontroleerd.
+                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+                    const benodigdeIds = [227, 229, 232, 235];
+                    const ontbrekendeNamen = benodigdeIds
+                        .filter(id => !inventory.find(i => i.id === id))
+                        .map(id => (knownItems[id] && knownItems[id].name) ? knownItems[id].name : `Voorwerp #${id}`);
+
+                    if (ontbrekendeNamen.length > 0) {
+                        alert(`Waarschuwing! Jullie missen nog voorwerpen, maar het lukt nog net om in te breken.\n\nNog niet verzameld: ${ontbrekendeNamen.join(', ')}`);
+                    } else {
+                        alert('Alle benodigde voorwerpen zijn verzameld. Tijd om in te breken!');
+                    }
+                } else if (inventory.find(i => i.id === scannedId)) {
                     alert("Dit heb je al in je bezit!");
                 } else {
                     inventory.push({ id: scannedId, name: knownItems[scannedId].name });
@@ -484,21 +502,8 @@
                     
                     saveLocalState();
                 }
-
-                // Speciale check voor "De rode knop": pas hierna inbreken als alle
-                // benodigde voorwerpen verzameld zijn.
-                if (scannedId === 236) {
-                    const benodigdeIds = [227, 229, 232, 235];
-                    const ontbrekendeNamen = benodigdeIds
-                        .filter(id => !inventory.find(i => i.id === id))
-                        .map(id => (knownItems[id] && knownItems[id].name) ? knownItems[id].name : `Voorwerp #${id}`);
-
-                    if (ontbrekendeNamen.length > 0) {
-                        alert(`Waarschuwing! Jullie missen nog voorwerpen, maar het lukt nog net om in te breken.\n\nNog niet verzameld: ${ontbrekendeNamen.join(', ')}`);
-                    }
-                }
             } else {
-                alert("QR Code niet herkend.");
+                alert("QR-code niet herkend.");
             }
             updateUI();
         }
@@ -590,7 +595,7 @@
                     hintsList.innerHTML += `
                         <div class="card" style="margin-bottom:8px;">
                             <h4 style="margin:0 0 8px 0; color:var(--primary);">${item.name}</h4>
-                            <p style="margin:0; font-size:14px; line-height:1.4; white-space:pre-line;">${itemData.story || "Geen extra tekst."}</p>
+                            ${itemData.story ? `<p style="margin:0; font-size:14px; line-height:1.4; white-space:pre-line;">${itemData.story}</p>` : ''}
                         </div>`;
                 } else {
                     invCount++;
@@ -750,21 +755,35 @@
             return audioCtx;
         }
 
-        // Start de gespannen achtergrondmuziek zodra het team op "Start Missie" drukt.
+        // Start de gespannen achtergrondmuziek. Wordt aangeroepen bij "Start Missie",
+        // maar ook automatisch opnieuw geprobeerd na het herladen van de pagina met
+        // een lopend spel (zie de polling/interactie-listeners verderop).
         function startHeistAudio() {
             if (musicStarted) return;
-            musicStarted = true;
 
-            bgMusicEl = new Audio(MUSIC_TRACK_URL);
-            bgMusicEl.loop = true;
+            if (!bgMusicEl) {
+                bgMusicEl = new Audio(MUSIC_TRACK_URL);
+                bgMusicEl.loop = true;
+                bgMusicEl.preload = 'auto';
+                // Als de echte sample niet kan laden of afspelen (netwerk, corrupt
+                // bestand, enz.), valt de app terug op de zelf-gesynthetiseerde loop
+                // zodat het spannende gevoel er sowieso is.
+                bgMusicEl.addEventListener('error', startFallbackAudio);
+            }
             bgMusicEl.volume = musicMuted ? 0 : 0.35;
-            bgMusicEl.preload = 'auto';
 
-            // Als de echte sample niet kan laden of afspelen (netwerk, autoplay-restricties,
-            // enz.), valt de app terug op de zelf-gesynthetiseerde loop zodat het spannende
-            // gevoel er sowieso is.
-            bgMusicEl.addEventListener('error', startFallbackAudio);
-            bgMusicEl.play().catch(startFallbackAudio);
+            const playPromise = bgMusicEl.play();
+            if (playPromise && typeof playPromise.then === 'function') {
+                playPromise.then(() => {
+                    musicStarted = true;
+                }).catch(() => {
+                    // Browser blokkeert afspelen zonder gebruikersinteractie (bv. direct
+                    // na een page reload). We proberen het opnieuw zodra de speler ergens
+                    // op tikt of klikt, of bij de volgende periodieke controle.
+                });
+            } else {
+                musicStarted = true;
+            }
         }
 
         function startFallbackAudio() {
@@ -835,6 +854,7 @@
             }, 500);
 
             fallbackNodes = { master, drone, pulseOsc, pulseTimer, arpTimer };
+            musicStarted = true;
         }
 
         function toggleMute() {
@@ -926,6 +946,31 @@
             }
         });
 
+        // Zorgt dat de muziek ook herstart als het spel al liep vóór een page
+        // reload (bv. na het verversen van de pagina). `startTime` is een
+        // globale variabele uit de kernlogica hierboven; we lezen 'm alleen uit,
+        // zonder daar iets in aan te passen.
+        function resumeAudioIfGameActive() {
+            if (typeof startTime !== 'undefined' && startTime && !musicStarted) {
+                startHeistAudio();
+            }
+        }
+        setInterval(resumeAudioIfGameActive, 1000);
+
+        // Browsers blokkeren geluid vaak totdat de speler ergens op tikt of klikt.
+        // Bij elke interactie proberen we de muziek (opnieuw) te starten of te
+        // hervatten, zodat er nooit stilte blijft hangen na een herlaad.
+        function unlockAudioOnInteraction() {
+            ensureAudioCtx();
+            if (bgMusicEl && bgMusicEl.paused && !musicMuted) {
+                bgMusicEl.play().then(() => { musicStarted = true; }).catch(() => {});
+            }
+            resumeAudioIfGameActive();
+        }
+        document.addEventListener('click', unlockAudioOnInteraction);
+        document.addEventListener('touchstart', unlockAudioOnInteraction, { passive: true });
+        document.addEventListener('keydown', unlockAudioOnInteraction);
+
         // --- Niet-invasieve haakjes in de bestaande spelfuncties ---
         // We wikkelen de originele functies in zodat de kernlogica hierboven
         // volledig ongewijzigd blijft; we voegen alleen geluid toe.
@@ -955,9 +1000,5 @@
             }
         };
     </script>
-
-    <div class="version-footer" style="margin-top:8px; opacity:0.5; font-size:0.65rem; text-transform:none; letter-spacing:0.02em;">
-        Muziek: "Stay the Course" door Kevin MacLeod (incompetech.com) — CC BY 4.0
-    </div>
 </body>
 </html>

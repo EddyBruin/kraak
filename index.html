@@ -53,38 +53,34 @@
 
         h2 { font-family: 'Bebas Neue', 'Oswald', sans-serif; letter-spacing: 0.06em; }
 
-        /* BIJGEWERKTE HEADER LAYOUT VOOR FLEXBOX */
+        /* FLEXBOX HEADER (Team + Sprite Links, Timer + Hartjes Rechts) */
         .header { 
             width: 100%; display: flex; justify-content: space-between; align-items: center; 
-            border-bottom: 2px solid var(--primary-dim); padding: 12px 0; margin-bottom: 20px;
+            border-bottom: 2px solid var(--primary-dim); padding-bottom: 12px; margin-bottom: 20px;
         }
-        
         .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-right { display: flex; align-items: center; gap: 16px; }
         
         .header h2 { margin: 0; font-size: 1.6rem; color: var(--primary); text-shadow: 0 0 12px rgba(201,160,52,0.35); }
         
-        .header-right { display: flex; align-items: center; gap: 16px; }
-
         .time { 
             font-family: 'Share Tech Mono', monospace; font-size: 1.3rem; font-weight: bold; color: var(--error); 
             background: var(--bg-deep); border: 1px solid var(--resistance-dark); padding: 4px 12px; border-radius: 4px;
             letter-spacing: 0.15em; box-shadow: 0 0 10px rgba(255,75,62,0.35), inset 0 0 6px rgba(255,75,62,0.25);
-            margin: 0;
             animation: tickGlow 1.6s ease-in-out infinite;
-        }
-        
-        .lives-display {
-            font-size: 1.2rem; cursor: pointer; user-select: none;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
-            transition: transform 0.1s;
             margin: 0;
         }
-        .lives-display:active { transform: scale(0.9); }
-
         @keyframes tickGlow {
             0%, 100% { box-shadow: 0 0 10px rgba(255,75,62,0.35), inset 0 0 6px rgba(255,75,62,0.25); }
             50% { box-shadow: 0 0 16px rgba(255,75,62,0.6), inset 0 0 8px rgba(255,75,62,0.4); }
         }
+
+        .lives-display {
+            font-size: 1.2rem; cursor: pointer; user-select: none;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+            transition: transform 0.1s; margin: 0;
+        }
+        .lives-display:active { transform: scale(0.9); }
         
         button {
             background: linear-gradient(180deg, #d9b23f, var(--primary) 55%, var(--primary-dim));
@@ -134,6 +130,7 @@
             transition: background 0.2s, transform 0.1s; border: 1px solid var(--line); border-left: 3px solid var(--primary-dim);
         }
         li:active { background: #2f281c; transform: scale(0.99); }
+        .click-hint { font-size: 0.8rem; color: var(--primary); opacity: 0.7; }
         
         #reader { width: 100%; background: #000; border-radius: 10px; overflow: hidden; margin-bottom: 16px; transform: translateZ(0); border: 2px solid var(--primary-dim); }
         #reader video { width: 100% !important; border-radius: 8px; }
@@ -167,11 +164,9 @@
             text-transform: uppercase; letter-spacing: 0.1em;
         }
 
-        .mask-icon { display: block; margin: 0 auto; filter: drop-shadow(0 6px 16px rgba(0,0,0,0.6)); }
-        
-        /* BIJGEWERKTE SPRITE STIJLEN */
-        .mask-icon.hero { width: 150px; height: auto; margin-bottom: 16px; }
-        .mask-icon.new-sprite { width: 44px; height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+        .mask-icon { display: block; margin: 0 auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8)); }
+        .mask-icon.hero { width: 130px; height: auto; margin-bottom: 16px; }
+        .mask-icon.new-sprite { width: 44px; height: auto; margin: 0; }
 
         .brand-eyebrow { font-family: 'Share Tech Mono', monospace; color: var(--resistance); letter-spacing: 0.35em; font-size: 0.7rem; text-transform: uppercase; margin-bottom: 6px; }
         .brand-title { font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; color: var(--primary); letter-spacing: 0.08em; margin: 4px 0 6px 0; line-height: 1; text-shadow: 0 0 18px rgba(201,160,52,0.35); }
@@ -192,7 +187,7 @@
             box-shadow: 0 0 8px 2px rgba(201,160,52,0.7); animation: sweep 2.6s linear infinite; pointer-events: none; z-index: 3;
         }
         @keyframes sweep { 0% { top: 4%; opacity: 0.9; } 95% { top: 94%; opacity: 0.9; } 100% { top: 94%; opacity: 0; } }
-        @keyframes breathe { 0%, 100% { filter: drop-shadow(0 6px 16px rgba(0,0,0,0.6)) drop-shadow(0 0 0 rgba(201,160,52,0)); } 50% { filter: drop-shadow(0 6px 16px rgba(0,0,0,0.6)) drop-shadow(0 0 18px rgba(201,160,52,0.45)); } }
+        @keyframes breathe { 0%, 100% { filter: drop-shadow(0 6px 16px rgba(0,0,0,0.6)); } 50% { filter: drop-shadow(0 6px 16px rgba(0,0,0,0.6)) drop-shadow(0 0 18px rgba(255,75,62,0.3)); } }
 
         .mute-btn {
             position: fixed; top: 14px; left: 16px; z-index: 9999; width: 34px; height: 34px; border-radius: 50%;
@@ -206,13 +201,41 @@
 </head>
 <body>
 
+    <!-- DOM Audio Element (Meest stabiel voor mobiele loops) -->
     <audio id="heist-bg-music" src="https://incompetech.com/music/royalty-free/mp3-royaltyfree/Stay%20the%20Course.mp3" loop preload="auto" style="display:none;"></audio>
 
+    <!-- INLINE SVG SPRITE (Rood Dalí Masker) -->
     <svg width="0" height="0" style="position:absolute">
         <defs>
+            <symbol id="svg-dali" viewBox="0 0 100 120">
+                <!-- Gezicht Achtergrond -->
+                <path d="M 15 25 C 15 -10, 85 -10, 85 25 C 95 60, 80 110, 50 115 C 20 110, 5 60, 15 25 Z" fill="#da3232" stroke="#111" stroke-width="2"/>
+                
+                <!-- Ogen & Wenkbrauwen -->
+                <path d="M 22 42 Q 35 30 45 42" fill="none" stroke="#111" stroke-width="4" stroke-linecap="round"/>
+                <path d="M 78 42 Q 65 30 55 42" fill="none" stroke="#111" stroke-width="4" stroke-linecap="round"/>
+                
+                <ellipse cx="32" cy="52" rx="10" ry="6" fill="#fff" stroke="#111" stroke-width="2"/>
+                <circle cx="32" cy="52" r="3" fill="#111"/>
+                
+                <ellipse cx="68" cy="52" rx="10" ry="6" fill="#fff" stroke="#111" stroke-width="2"/>
+                <circle cx="68" cy="52" r="3" fill="#111"/>
+                
+                <!-- Neus -->
+                <path d="M 50 50 L 45 80 Q 50 85 55 80 Z" fill="none" stroke="#111" stroke-width="2"/>
+                <path d="M 40 82 Q 50 78 60 82" fill="none" stroke="#111" stroke-width="2"/>
+                
+                <!-- Snor (Gekruld) -->
+                <path d="M 18 90 Q 40 75 50 88 Q 60 75 82 90 Q 88 100 75 80 Q 50 105 25 80 Q 12 100 18 90 Z" fill="#111"/>
+                
+                <!-- Mond / Kin -->
+                <path d="M 42 102 Q 50 100 58 102" fill="none" stroke="#111" stroke-width="2"/>
+            </symbol>
+            
             <symbol id="svg-seal" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="46" fill="none" stroke="#b3212e" stroke-width="4" stroke-dasharray="6 4"/>
                 <circle cx="50" cy="50" r="34" fill="none" stroke="#b3212e" stroke-width="2"/>
+                <text x="50" y="55" font-family="'Oswald', sans-serif" font-size="20" font-weight="bold" fill="#b3212e" text-anchor="middle">BUIT</text>
             </symbol>
         </defs>
     </svg>
@@ -225,16 +248,18 @@
     <div id="connection-indicator" class="status-dot" title="Verbinding met de kluis"></div>
 
     <div class="content-wrapper">
+        <!-- Laadscherm -->
         <div id="loading-screen" class="screen active">
-            <img src="new_mask_sprite.png" class="mask-icon hero" style="animation: fadeIn 0.8s ease, breathe 3s ease-in-out infinite;" alt="Heist Masker Groot">
+            <svg class="mask-icon hero" style="animation: fadeIn 0.8s ease, breathe 3s ease-in-out infinite;"><use href="#svg-dali"/></svg>
             <div class="brand-eyebrow">Toegang tot de kluis</div>
             <h2 style="color:var(--primary); font-size:1.6rem;">Speldata Laden...</h2>
             <p id="loading-message" class="brand-sub">De verbinding met de kluis wordt gecontroleerd.</p>
             <button id="retry-btn" class="secondary" style="display:none;" onclick="fetchGameData()">Opnieuw Proberen</button>
         </div>
 
+        <!-- Login Scherm -->
         <div id="login-screen" class="screen">
-            <img src="new_mask_sprite.png" class="mask-icon hero" alt="Heist Masker Groot">
+            <svg class="mask-icon hero"><use href="#svg-dali"/></svg>
             <div class="brand-eyebrow">Operatie · Vertrouwelijk</div>
             <h2 class="brand-title">De Kraak<br>van de Eeuw</h2>
             <p class="brand-sub">Voer jullie teamnaam in om te starten. De tijd begint direct te lopen!</p>
@@ -242,10 +267,11 @@
             <button onclick="startGame()">Start Missie</button>
         </div>
 
+        <!-- Hoofdscherm -->
         <div id="main-screen" class="screen">
             <div class="header">
                 <div class="header-left">
-                    <img src="new_mask_sprite.png" class="mask-icon new-sprite" alt="Heist Masker Sprite">
+                    <svg class="mask-icon new-sprite"><use href="#svg-dali"/></svg>
                     <h2 id="display-team">Team</h2>
                 </div>
                 <div class="header-right">
@@ -257,6 +283,7 @@
             <button onclick="openScanner()">⌕ Scan nieuwe QR-code</button>
             <button class="secondary" onclick="openCombine()">⚙ Combineer items</button>
 
+            <!-- HINTS KNOP -->
             <button id="hints-btn" class="secondary" style="display:none; margin-bottom: 16px;" onclick="showScreen('hints-screen')">Lees alle hints (0)</button>
 
             <div class="card">
@@ -266,17 +293,35 @@
             </div>
         </div>
 
+        <!-- Hints Scherm -->
+        <div id="hints-screen" class="screen">
+            <div class="header">
+                <div class="header-left">
+                    <svg class="mask-icon new-sprite"><use href="#svg-dali"/></svg>
+                    <h2>Hints</h2>
+                </div>
+                <div class="header-right">
+                    <div class="time" id="hints-time-display">00:00</div>
+                    <div class="lives-display hints-lives-display">❤️❤️❤️</div>
+                </div>
+            </div>
+            <div id="hints-list" style="width:100%; text-align:left; margin-bottom: 16px;"></div>
+            <button class="secondary" onclick="showScreen('main-screen')">Terug naar Inventaris</button>
+        </div>
+
+        <!-- Scanner Scherm -->
         <div id="scanner-screen" class="screen">
             <div class="header">
                 <div class="header-left">
-                    <img src="new_mask_sprite.png" class="mask-icon new-sprite" alt="Heist Masker Sprite">
-                    <h2 id="display-team">Team</h2>
+                    <svg class="mask-icon new-sprite"><use href="#svg-dali"/></svg>
+                    <h2 id="scanner-team-display">Team</h2>
                 </div>
                 <div class="header-right">
-                    <div class="time" id="time-display">00:00</div>
-                    <div class="lives-displayhints-lives-display">❤️❤️❤️</div>
+                    <div class="time" id="scanner-time-display">00:00</div>
+                    <div class="lives-display scanner-lives-display">❤️❤️❤️</div>
                 </div>
             </div>
+            
             <div class="brand-eyebrow">Doelwit lokaliseren</div>
             <h2 style="color:var(--primary); margin-top:0;">Scan QR-code</h2>
             <div class="corner-frame" style="width:100%; position:relative;">
@@ -285,18 +330,38 @@
                 <div class="cf-tr"></div>
                 <div class="cf-br"></div>
             </div>
-            <button class="secondary" onclick="closeScanner()">Annuleren</button>
+            <button class="secondary" style="margin-top:20px;" onclick="closeScanner()">Annuleren</button>
         </div>
 
+        <!-- Combineer Scherm -->
+        <div id="combine-screen" class="screen">
+            <div class="header">
+                <div class="header-left">
+                    <svg class="mask-icon new-sprite"><use href="#svg-dali"/></svg>
+                    <h2>Combineer</h2>
+                </div>
+                <div class="header-right">
+                    <div class="time" id="combine-time-display">00:00</div>
+                    <div class="lives-display combine-lives-display">❤️❤️❤️</div>
+                </div>
+            </div>
+            <p class="brand-sub" style="margin-bottom:12px;">Kies twee unieke items. Een foute combinatie kost 1 minuut straftijd!</p>
+            <select id="item-select-1"><option value="">Kies Voorwerp 1</option></select>
+            <select id="item-select-2"><option value="">Kies Voorwerp 2</option></select>
+            <button onclick="tryCombination()">Probeer Combinatie</button>
+            <button class="secondary" onclick="showScreen('main-screen')">Terug</button>
+        </div>
+
+        <!-- Resultaat / Verhaal Scherm -->
         <div id="story-screen" class="screen">
             <div class="header">
                 <div class="header-left">
-                    <img src="new_mask_sprite.png" class="mask-icon new-sprite" alt="Heist Masker Sprite">
-                    <h2 id="display-team">Team</h2>
+                    <svg class="mask-icon new-sprite"><use href="#svg-dali"/></svg>
+                    <h2 id="story-team-display">Team</h2>
                 </div>
                 <div class="header-right">
-                    <div class="time" id="time-display">00:00</div>
-                    <div class="lives-display combine-lives-display">❤️❤️❤️</div>
+                    <div class="time" id="story-time-display">00:00</div>
+                    <div class="lives-display story-lives-display">❤️❤️❤️</div>
                 </div>
             </div>
             <svg class="mask-icon" style="width:60px; margin-bottom:8px;"><use href="#svg-seal"/></svg>
@@ -307,5 +372,633 @@
             <button onclick="showScreen('main-screen')">Begrepen, ga door!</button>
         </div>
     </div>
+
+    <!-- Verhaal Popup Modal -->
+    <div id="item-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Titel</h3>
+            <p id="modal-story">Verhaal...</p>
+            <button class="secondary" onclick="closeModal()">Sluiten</button>
+            <button id="modal-delete-btn" class="danger">Verwijder uit inventaris</button>
+        </div>
+    </div>
+
+    <div class="version-footer">
+        De Kraak van de Eeuw — Engine Versie 2.1
+    </div>
+
+    <script>
+        // --- INSTELLINGEN ---
+        const SHEET_ID = '1559c0QnlkTWafVqvRhixHXww-bCs6mSvh10BIVDGXVU';
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbysNb1du-ujs-hKVCwxbKlUYa31sPA8NKPZKUxvxtrr-FH01nZEY7EdW2Y03XyxPPT6/exec";
+
+        let knownItems = {}; 
+        let combinations = {}; 
+        
+        let teamName = "";
+        let inventory = []; 
+        let startTime = null;
+        let penaltyMinutes = 0;
+        let lives = 3; 
+        let html5QrcodeScanner = null;
+
+        window.onload = () => {
+            fetchGameData();
+            setInterval(updateTimerUI, 1000);
+        };
+
+        function setConnectionStatus(connected) {
+            const dot = document.getElementById('connection-indicator');
+            if (connected) { dot.classList.add('connected'); } else { dot.classList.remove('connected'); }
+        }
+
+        // --- DATABASE SYNC LOGICA ---
+        function calculateTeamStatus() {
+            const benodigdeIds = [227, 229, 232, 235];
+            const ontbrekendeNamen = benodigdeIds
+                .filter(id => !inventory.find(i => i.id === id))
+                .map(id => (knownItems[id] && knownItems[id].name) ? knownItems[id].name : `Item #${id}`);
+
+            if (ontbrekendeNamen.length > 0) {
+                return "Mist: " + ontbrekendeNamen.join(', ');
+            } else {
+                return "Klaar om in te breken!";
+            }
+        }
+
+        function syncToDatabase() {
+            if(!WEB_APP_URL || !teamName) return; 
+
+            const elapsedMs = Date.now() - startTime;
+            const totalSeconds = Math.floor(elapsedMs / 1000) + (penaltyMinutes * 60);
+            const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+            const s = (totalSeconds % 60).toString().padStart(2, '0');
+
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    team: teamName,
+                    timeFormatted: `${m}:${s}`,
+                    penalty: penaltyMinutes,
+                    lives: lives,
+                    status: calculateTeamStatus(),
+                    inventory: inventory
+                })
+            }).catch(e => console.log("Achtergrondsync mislukt:", e));
+        }
+
+        // --- ROBUUSTE OPVRAAG LOGICA ---
+        function fetchGameData() {
+            setConnectionStatus(false);
+            const retryBtn = document.getElementById('retry-btn');
+            const msgEl = document.getElementById('loading-message');
+            retryBtn.style.display = 'none';
+            msgEl.innerText = 'De verbinding met de kluis wordt gecontroleerd...';
+            
+            const sheetNameEnc = encodeURIComponent('Escape Room Kamp - Bankroof Combinaties');
+            const cacheBuster = Math.floor(Date.now() / 10000); 
+            const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheetNameEnc}&_cache=${cacheBuster}`;
+            
+            fetch(CSV_URL, { cache: "no-store" })
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP Fout ${response.status}`);
+                    return response.text();
+                })
+                .then(csvText => {
+                    if (csvText.trim().toLowerCase().startsWith('<!doctype html>') || csvText.includes('<html')) {
+                        throw new Error("De Sheet lijkt niet meer openbaar (HTML teruggekregen).");
+                    }
+                    
+                    parseGameData(csvText);
+                    
+                    if (Object.keys(knownItems).length === 0) {
+                        throw new Error("De sheet werd geladen, maar bevat geen leesbare data.");
+                    }
+                    
+                    setConnectionStatus(true);
+                    document.getElementById('loading-screen').classList.remove('active');
+                    if (loadLocalState()) {
+                        updateUI();
+                        showScreen('main-screen');
+                    } else {
+                        showScreen('login-screen');
+                    }
+                })
+                .catch(err => {
+                    console.error("Fout bij ophalen kluis:", err);
+                    setConnectionStatus(false);
+                    retryBtn.style.display = 'block';
+                    msgEl.innerText = `ERROR: ${err.message}\nControleer de internetverbinding en de instellingen van de Google Sheet.`;
+                });
+        }
+
+        function startGame() {
+            const name = document.getElementById('team-name').value.trim();
+            if(!name) return alert("Vul een teamnaam in!");
+            teamName = name;
+            startTime = Date.now();
+            penaltyMinutes = 0;
+            lives = 3;
+            inventory = [];
+            saveLocalState();
+            syncToDatabase();
+            updateUI();
+            showScreen('main-screen');
+        }
+
+        function loseLife() {
+            if(confirm("Heeft de Infiltrant jullie betrapt? Tik op OK om een leven in te leveren.")) {
+                lives--;
+                playSfx('error');
+                
+                if (lives <= 0) {
+                    alert("⚠️ JULLIE ZIJN GEARRESTEERD! ⚠️\n\nAlle bewijsstukken in jullie inventaris zijn in beslag genomen! Jullie zullen deze opnieuw moeten verzamelen. De gevonden hints blijven wel bewaard in jullie notitieblokje.");
+                    
+                    // Filter de inventaris en behoud alleen de hints
+                    inventory = inventory.filter(item => {
+                        const itemData = knownItems[item.id] || { type: 'inventaris' };
+                        return itemData.type.includes('hint');
+                    });
+                    
+                    // Reset levens
+                    lives = 3;
+                }
+                
+                saveLocalState();
+                syncToDatabase();
+                updateUI();
+            }
+        }
+
+        function openScanner() {
+            showScreen('scanner-screen');
+            const qrEl = document.getElementById('reader');
+            qrEl.innerHTML = '';
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+                onScanSuccess,
+                () => {}
+            ).catch(() => {
+                alert("Kan geen toegang krijgen tot de camera. Controleer de camerarechten van deze browser.");
+                showScreen('main-screen');
+            });
+        }
+
+        function closeScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop()
+                    .then(() => html5QrcodeScanner.clear())
+                    .catch(() => {});
+            }
+            showScreen('main-screen');
+        }
+
+        function onScanSuccess(decodedText) {
+            closeScanner();
+            const scannedId = parseInt(decodedText);
+            
+            if (knownItems[scannedId]) {
+                if (scannedId === 236) {
+                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                    const benodigdeIds = [227, 229, 232, 235];
+                    const ontbrekendeNamen = benodigdeIds
+                        .filter(id => !inventory.find(i => i.id === id))
+                        .map(id => (knownItems[id] && knownItems[id].name) ? knownItems[id].name : `Voorwerp #${id}`);
+
+                    if (ontbrekendeNamen.length > 0) {
+                        alert(`Waarschuwing! Jullie missen nog voorwerpen, maar het lukt nog net om in te breken.\n\nNog niet verzameld: ${ontbrekendeNamen.join(', ')}`);
+                    } else {
+                        alert('Alle benodigde voorwerpen zijn verzameld. Tijd om in te breken!');
+                    }
+                } else if (inventory.find(i => i.id === scannedId)) {
+                    alert("Dit heb je al in je bezit!");
+                } else {
+                    inventory.push({ id: scannedId, name: knownItems[scannedId].name });
+                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                    
+                    const isHint = knownItems[scannedId].type.includes('hint');
+                    alert(`Gevonden: ${knownItems[scannedId].name}! ${isHint ? "(Toegevoegd aan Hints)" : ""}`);
+                    
+                    saveLocalState();
+                    syncToDatabase();
+                }
+            } else {
+                alert("QR-code niet herkend.");
+            }
+            updateUI();
+        }
+
+        function openCombine() {
+            const sel1 = document.getElementById('item-select-1');
+            const sel2 = document.getElementById('item-select-2');
+            sel1.innerHTML = '<option value="">Kies Voorwerp 1</option>';
+            sel2.innerHTML = '<option value="">Kies Voorwerp 2</option>';
+            
+            inventory.forEach(item => {
+                const itemData = knownItems[item.id] || { type: 'inventaris' };
+                if (!itemData.type.includes('hint')) {
+                    sel1.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+                    sel2.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+                }
+            });
+            showScreen('combine-screen');
+        }
+
+        function tryCombination() {
+            const id1 = document.getElementById('item-select-1').value;
+            const id2 = document.getElementById('item-select-2').value;
+
+            if(!id1 || !id2) return alert("Kies twee voorwerpen!");
+            if(id1 === id2) return alert("Je kunt een voorwerp niet met zichzelf combineren!");
+
+            const comboKey = `${id1}_${id2}`;
+            if (combinations[comboKey]) {
+                const result = combinations[comboKey];
+                
+                if (!inventory.find(i => i.id === result.resId)) {
+                    inventory.push({ id: result.resId, name: result.resName });
+                }
+
+                document.getElementById('story-title').innerText = "Succes: " + result.resName;
+                document.getElementById('story-text').innerText = result.story;
+                
+                saveLocalState();
+                syncToDatabase();
+                updateUI(); 
+                showScreen('story-screen');
+            } else {
+                penaltyMinutes++;
+                alert("Helaas, deze combinatie levert niets op! (+1 Minuut straftijd)");
+                saveLocalState();
+                syncToDatabase();
+                updateUI();
+                showScreen('main-screen');
+            }
+        }
+
+        // --- POPUP & VERWIJDER LOGICA ---
+        function showItemModal(id) {
+            const itemData = knownItems[id];
+            if (!itemData) return;
+            document.getElementById('modal-title').innerText = itemData.name;
+            document.getElementById('modal-story').innerText = itemData.story || "Dit is een basisvoorwerp. Er is geen verdere beschrijving beschikbaar.";
+            
+            document.getElementById('modal-delete-btn').onclick = () => deleteItem(id);
+            document.getElementById('item-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('item-modal').classList.remove('active');
+        }
+
+        function deleteItem(id) {
+            if(confirm("Weet je zeker dat je dit voorwerp wilt weggooien? Je zult het opnieuw moeten scannen als je het toch weer nodig hebt.")) {
+                inventory = inventory.filter(i => i.id !== id);
+                saveLocalState();
+                syncToDatabase();
+                updateUI();
+                closeModal();
+            }
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function updateUI() {
+            // Update team namen over de verschillende schermen
+            document.getElementById('display-team').innerText = teamName;
+            const scannerTeam = document.getElementById('scanner-team-display');
+            if(scannerTeam) scannerTeam.innerText = teamName;
+            const storyTeam = document.getElementById('story-team-display');
+            if(storyTeam) storyTeam.innerText = teamName;
+            
+            const invList = document.getElementById('inventory-list');
+            const hintsList = document.getElementById('hints-list');
+            const hintsBtn = document.getElementById('hints-btn');
+            
+            invList.innerHTML = '';
+            hintsList.innerHTML = '';
+            
+            let invCount = 0;
+            let hintCount = 0;
+
+            inventory.forEach(item => {
+                const itemData = knownItems[item.id] || { type: 'inventaris', story: '' };
+                const isHint = itemData.type.includes('hint');
+                
+                if (isHint) {
+                    hintCount++;
+                    hintsList.innerHTML += `
+                        <div class="card" style="margin-bottom:8px;">
+                            <h4 style="margin:0 0 8px 0; color:var(--primary);">${item.name}</h4>
+                            ${itemData.story ? `<p style="margin:0; font-size:14px; line-height:1.4; white-space:pre-line;">${itemData.story}</p>` : ''}
+                        </div>`;
+                } else {
+                    invCount++;
+                    invList.innerHTML += `
+                        <li onclick="showItemModal(${item.id})">
+                            <span>${item.name} <span class="click-hint">(bekijk)</span></span>
+                        </li>`;
+                }
+            });
+
+            if(invCount === 0) invList.innerHTML = '<li>Nog geen voorwerpen.</li>';
+            if(hintCount === 0) hintsList.innerHTML = '<p>Jullie hebben nog geen hints gevonden.</p>';
+
+            if(hintCount > 0) {
+                hintsBtn.style.display = 'block';
+                hintsBtn.innerText = `Lees alle hints (${hintCount})`;
+            } else {
+                hintsBtn.style.display = 'none';
+            }
+
+            // Update hartjes globaal over alle schermen
+            const heartsStr = '❤️'.repeat(lives) + '🖤'.repeat(3 - lives);
+            document.querySelectorAll('.lives-display').forEach(el => {
+                el.innerText = heartsStr;
+            });
+
+            updateTimerUI();
+        }
+
+        function updateTimerUI() {
+            if(!startTime) return;
+            const elapsedMs = Date.now() - startTime;
+            const totalSeconds = Math.floor(elapsedMs / 1000) + (penaltyMinutes * 60);
+            const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+            const s = (totalSeconds % 60).toString().padStart(2, '0');
+            
+            const timeString = `${m}:${s}`;
+            document.getElementById('time-display').innerText = timeString;
+            
+            const hintTime = document.getElementById('hints-time-display');
+            if(hintTime) hintTime.innerText = timeString;
+            
+            const combineTime = document.getElementById('combine-time-display');
+            if(combineTime) combineTime.innerText = timeString;
+
+            const scannerTime = document.getElementById('scanner-time-display');
+            if(scannerTime) scannerTime.innerText = timeString;
+
+            const storyTime = document.getElementById('story-time-display');
+            if(storyTime) storyTime.innerText = timeString;
+        }
+
+        // --- KOGELVRIJE CSV PARSER ---
+        function parseGameData(csvText) {
+            let lines = [];
+            let row = [""];
+            let inQuotes = false;
+
+            for (let i = 0; i < csvText.length; i++) {
+                let char = csvText[i];
+                let nextChar = csvText[i + 1];
+
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        row[row.length - 1] += '"';
+                        i++; 
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    row.push("");
+                } else if ((char === '\n' || char === '\r') && !inQuotes) {
+                    if (char === '\r' && nextChar === '\n') { i++; }
+                    lines.push(row);
+                    row = [""];
+                } else {
+                    row[row.length - 1] += char;
+                }
+            }
+            if (row.length > 1 || row[0] !== "") lines.push(row);
+
+            lines.forEach((cols, index) => {
+                if (index === 0) return; 
+                const cleanCols = cols.map(v => (v || "").trim().replace(/^"|"$/g, ''));
+                
+                while(cleanCols.length < 12) cleanCols.push("");
+
+                let offset = 0;
+                if (isNaN(parseInt(cleanCols[1])) && !isNaN(parseInt(cleanCols[0]))) { offset = -1; }
+
+                let idA = parseInt(cleanCols[1 + offset]);
+                let naamA = cleanCols[2 + offset];
+                let idB = parseInt(cleanCols[4 + offset]);
+                let naamB = cleanCols[5 + offset];
+                let resId = parseInt(cleanCols[6 + offset]);
+                let resNaam = cleanCols[7 + offset];
+                let story = cleanCols[8 + offset];
+                let typeInfo = cleanCols[10 + offset] ? cleanCols[10 + offset].toLowerCase().trim() : "inventaris";
+
+                if (!isNaN(resId) && resNaam) {
+                    knownItems[resId] = { name: resNaam, type: typeInfo, story: story };
+                    
+                    if (!isNaN(idA) && !isNaN(idB)) {
+                        combinations[`${idA}_${idB}`] = { resId, resName: resNaam, story };
+                        combinations[`${idB}_${idA}`] = { resId, resName: resNaam, story };
+                    }
+                    
+                    if (!isNaN(idA) && !knownItems[idA]) knownItems[idA] = { name: naamA || `Voorwerp #${idA}`, type: "inventaris", story: "" };
+                    if (!isNaN(idB) && !knownItems[idB]) knownItems[idB] = { name: naamB || `Voorwerp #${idB}`, type: "inventaris", story: "" };
+                } 
+                else if (!isNaN(idA) && naamA) {
+                    if (!knownItems[idA]) {
+                        knownItems[idA] = { name: naamA, type: typeInfo, story: story };
+                    } else {
+                        if (typeInfo && typeInfo !== "inventaris") knownItems[idA].type = typeInfo;
+                        if (story) knownItems[idA].story = story;
+                    }
+                }
+            });
+        }
+
+        function saveLocalState() {
+            localStorage.setItem('kraak_state', JSON.stringify({ teamName, inventory, startTime, penaltyMinutes, lives }));
+        }
+
+        function loadLocalState() {
+            const saved = localStorage.getItem('kraak_state');
+            if(saved) {
+                const state = JSON.parse(saved);
+                teamName = state.teamName; 
+                inventory = state.inventory || []; 
+                startTime = state.startTime; 
+                penaltyMinutes = state.penaltyMinutes || 0;
+                lives = state.lives !== undefined ? state.lives : 3;
+                return true;
+            }
+            return false;
+        }
+    </script>
+
+    <!-- ============================================================
+         HEIST AUDIO-ENGINE
+         ============================================================ -->
+    <script>
+        let audioCtx = null;
+        let musicMuted = (localStorage.getItem('kraak_muted') === '1');
+        let musicStarted = false;
+        let bgMusicEl = null;
+
+        function ensureAudioCtx() {
+            if (!audioCtx) {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return null;
+                audioCtx = new AC();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            return audioCtx;
+        }
+
+        function startHeistAudio() {
+            if (musicStarted) return;
+
+            bgMusicEl = document.getElementById('heist-bg-music');
+            if (bgMusicEl) {
+                bgMusicEl.volume = musicMuted ? 0 : 0.35;
+                const playPromise = bgMusicEl.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        musicStarted = true;
+                    }).catch(() => {});
+                }
+            }
+        }
+
+        function toggleMute() {
+            musicMuted = !musicMuted;
+            localStorage.setItem('kraak_muted', musicMuted ? '1' : '0');
+
+            bgMusicEl = document.getElementById('heist-bg-music');
+            if (bgMusicEl) {
+                bgMusicEl.volume = musicMuted ? 0 : 0.35;
+            }
+
+            document.getElementById('mute-icon-on').style.display = musicMuted ? 'none' : 'block';
+            document.getElementById('mute-icon-off').style.display = musicMuted ? 'block' : 'none';
+
+            if (!musicMuted) ensureAudioCtx();
+        }
+
+        function playSfx(kind) {
+            const ctx = ensureAudioCtx();
+            if (!ctx || musicMuted) return;
+            const t = ctx.currentTime;
+            const out = ctx.createGain();
+            out.connect(ctx.destination);
+
+            if (kind === 'scan') {
+                out.gain.value = 0.22;
+                const osc = ctx.createOscillator();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(880, t);
+                osc.frequency.exponentialRampToValueAtTime(1320, t + 0.12);
+                const g = ctx.createGain();
+                g.gain.setValueAtTime(0.5, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+                osc.connect(g).connect(out);
+                osc.start(t); osc.stop(t + 0.2);
+            } else if (kind === 'success') {
+                out.gain.value = 0.25;
+                [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
+                    const g = ctx.createGain();
+                    const start = t + i * 0.09;
+                    g.gain.setValueAtTime(0, start);
+                    g.gain.linearRampToValueAtTime(0.5, start + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.001, start + 0.4);
+                    osc.connect(g).connect(out);
+                    osc.start(start); osc.stop(start + 0.42);
+                });
+            } else if (kind === 'alarm') {
+                out.gain.value = 0.22;
+                for (let i = 0; i < 2; i++) {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'sawtooth';
+                    const start = t + i * 0.24;
+                    osc.frequency.setValueAtTime(440, start);
+                    osc.frequency.linearRampToValueAtTime(220, start + 0.2);
+                    const g = ctx.createGain();
+                    g.gain.setValueAtTime(0.5, start);
+                    g.gain.exponentialRampToValueAtTime(0.001, start + 0.22);
+                    osc.connect(g).connect(out);
+                    osc.start(start); osc.stop(start + 0.24);
+                }
+            } else if (kind === 'error') {
+                out.gain.value = 0.2;
+                const osc = ctx.createOscillator();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(180, t);
+                const g = ctx.createGain();
+                g.gain.setValueAtTime(0.4, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+                osc.connect(g).connect(out);
+                osc.start(t); osc.stop(t + 0.25);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const onIcon = document.getElementById('mute-icon-on');
+            const offIcon = document.getElementById('mute-icon-off');
+            if (onIcon && offIcon) {
+                onIcon.style.display = musicMuted ? 'none' : 'block';
+                offIcon.style.display = musicMuted ? 'block' : 'none';
+            }
+        });
+
+        function resumeAudioIfGameActive() {
+            if (typeof startTime !== 'undefined' && startTime && !musicStarted) {
+                startHeistAudio();
+            }
+        }
+        setInterval(resumeAudioIfGameActive, 1000);
+
+        function unlockAudioOnInteraction() {
+            ensureAudioCtx();
+            bgMusicEl = document.getElementById('heist-bg-music');
+            if (bgMusicEl && bgMusicEl.paused && !musicMuted && startTime) {
+                bgMusicEl.play().then(() => { musicStarted = true; }).catch(() => {});
+            }
+            resumeAudioIfGameActive();
+        }
+        document.addEventListener('click', unlockAudioOnInteraction);
+        document.addEventListener('touchstart', unlockAudioOnInteraction, { passive: true });
+        document.addEventListener('keydown', unlockAudioOnInteraction);
+
+        const _startGame = startGame;
+        startGame = function() {
+            _startGame.apply(this, arguments);
+            startHeistAudio();
+        };
+
+        const _onScanSuccess = onScanSuccess;
+        onScanSuccess = function(decodedText) {
+            const before = inventory.length;
+            _onScanSuccess.apply(this, arguments);
+            if (inventory.length > before) {
+                playSfx('scan');
+            }
+        };
+
+        const _tryCombination = tryCombination;
+        tryCombination = function() {
+            const before = penaltyMinutes;
+            _tryCombination.apply(this, arguments);
+            if (penaltyMinutes > before) {
+                playSfx('alarm');
+            } else {
+                playSfx('success');
+            }
+        };
+    </script>
 </body>
 </html>

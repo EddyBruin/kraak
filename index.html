@@ -23,16 +23,15 @@
             --muted: #8d8375;
             --line: #33291c;
         }
+        
         * { box-sizing: border-box; }
+        
         body {
             background-color: var(--bg); color: var(--text);
             font-family: 'Oswald', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0; padding: 16px;
+            margin: 0; padding: 0;
             overscroll-behavior-y: contain;
-            display: flex;
-            flex-direction: column;
-            min-height: 95vh;
-            position: relative;
+            display: flex; flex-direction: column; min-height: 100vh;
             background-image:
                 radial-gradient(ellipse at 20% -10%, rgba(179,33,46,0.14), transparent 45%),
                 radial-gradient(ellipse at 90% 110%, rgba(201,160,52,0.10), transparent 50%),
@@ -42,46 +41,58 @@
         body::before {
             content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 5000;
             background: linear-gradient(180deg, transparent 0%, rgba(201,160,52,0.05) 50%, transparent 100%);
-            background-size: 100% 6px;
-            opacity: 0.5;
-            mix-blend-mode: overlay;
+            background-size: 100% 6px; opacity: 0.5; mix-blend-mode: overlay;
         }
-        .content-wrapper { flex: 1; width: 100%; position: relative; z-index: 1; }
-        .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 500px; margin: 0 auto; text-align: center; }
-        .screen.active { display: flex; animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-        h2 { font-family: 'Bebas Neue', 'Oswald', sans-serif; letter-spacing: 0.06em; }
+        h2 { font-family: 'Bebas Neue', 'Oswald', sans-serif; letter-spacing: 0.06em; margin: 0; }
 
-        /* FLEXBOX HEADER (Team + Sprite Links, Timer + Hartjes Rechts) */
-        .header { 
-            width: 100%; display: flex; justify-content: space-between; align-items: center; 
-            border-bottom: 2px solid var(--primary-dim); padding-bottom: 12px; margin-bottom: 20px;
+        /* --- GLOBALE HEADER OP 1 LIJN --- */
+        .global-header {
+            width: 100%; max-width: 500px; margin: 0 auto;
+            display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+            border-bottom: 2px solid var(--primary); padding: 12px 16px;
+            background-color: var(--bg-deep);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            z-index: 10;
         }
-        .header-left { display: flex; align-items: center; gap: 12px; }
-        .header-right { display: flex; align-items: center; gap: 16px; }
         
-        .header h2 { margin: 0; font-size: 1.6rem; color: var(--primary); text-shadow: 0 0 12px rgba(201,160,52,0.35); }
+        .header-left { display: flex; align-items: center; gap: 8px; justify-content: flex-start; min-width: 0; }
+        .header-left h2 { font-size: 1.4rem; color: var(--primary); text-shadow: 0 0 10px rgba(201,160,52,0.3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
-        .time { 
-            font-family: 'Share Tech Mono', monospace; font-size: 1.3rem; font-weight: bold; color: var(--error); 
-            background: var(--bg-deep); border: 1px solid var(--resistance-dark); padding: 4px 12px; border-radius: 4px;
-            letter-spacing: 0.15em; box-shadow: 0 0 10px rgba(255,75,62,0.35), inset 0 0 6px rgba(255,75,62,0.25);
-            animation: tickGlow 1.6s ease-in-out infinite;
-            margin: 0;
-        }
-        @keyframes tickGlow {
-            0%, 100% { box-shadow: 0 0 10px rgba(255,75,62,0.35), inset 0 0 6px rgba(255,75,62,0.25); }
-            50% { box-shadow: 0 0 16px rgba(255,75,62,0.6), inset 0 0 8px rgba(255,75,62,0.4); }
-        }
-
+        .header-center { display: flex; align-items: center; justify-content: center; }
         .lives-display {
-            font-size: 1.2rem; cursor: pointer; user-select: none;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
-            transition: transform 0.1s; margin: 0;
+            font-size: 1.1rem; cursor: pointer; user-select: none;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); transition: transform 0.1s; letter-spacing: -2px;
         }
         .lives-display:active { transform: scale(0.9); }
         
+        .header-right { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+        .time { 
+            font-family: 'Share Tech Mono', monospace; font-size: 1.1rem; font-weight: bold; color: var(--error); 
+            background: var(--bg); border: 1px solid var(--resistance-dark); padding: 2px 8px; border-radius: 4px;
+            letter-spacing: 0.1em; box-shadow: 0 0 8px rgba(255,75,62,0.3), inset 0 0 4px rgba(255,75,62,0.2);
+            animation: tickGlow 1.6s ease-in-out infinite; margin: 0;
+        }
+        @keyframes tickGlow {
+            0%, 100% { box-shadow: 0 0 8px rgba(255,75,62,0.3), inset 0 0 4px rgba(255,75,62,0.2); }
+            50% { box-shadow: 0 0 14px rgba(255,75,62,0.6), inset 0 0 6px rgba(255,75,62,0.4); }
+        }
+
+        .status-dot {
+            width: 12px; height: 12px; background-color: var(--error); border-radius: 50%;
+            transition: background-color 0.3s ease; box-shadow: 0 0 6px rgba(255,75,62,0.8); 
+            border: 1px solid rgba(0,0,0,0.6); flex-shrink: 0;
+        }
+        .status-dot.connected { background-color: var(--primary); box-shadow: 0 0 6px rgba(201,160,52,0.8); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(201,160,52,0.6); } 70% { box-shadow: 0 0 0 7px rgba(201,160,52,0); } 100% { box-shadow: 0 0 0 0 rgba(201,160,52,0); } }
+
+        /* --- CONTENT & SCHERMEN --- */
+        .content-wrapper { flex: 1; width: 100%; max-width: 500px; margin: 0 auto; padding: 16px; position: relative; z-index: 1; }
+        
+        .screen { display: none; flex-direction: column; align-items: center; width: 100%; text-align: center; }
+        .screen.active { display: flex; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
         button {
             background: linear-gradient(180deg, #d9b23f, var(--primary) 55%, var(--primary-dim));
             color: #1a1305; border: none; border-bottom: 3px solid #6e5417;
@@ -93,18 +104,9 @@
         }
         button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.4); }
         
-        button.secondary {
-            background: transparent; color: var(--primary); border: 2px solid var(--primary-dim);
-            border-bottom: 2px solid var(--primary-dim); box-shadow: none;
-        }
+        button.secondary { background: transparent; color: var(--primary); border: 2px solid var(--primary-dim); border-bottom: 2px solid var(--primary-dim); box-shadow: none; }
         button.secondary:active { transform: translateY(1px); }
-        
-        button.danger {
-            background: linear-gradient(180deg, rgba(255,75,62,0.15), rgba(255,75,62,0.25));
-            color: var(--error); border: 1px solid var(--error); border-bottom: 3px solid var(--resistance-dark);
-            margin-top: 12px;
-        }
-        button.danger:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.4); }
+        button.danger { background: linear-gradient(180deg, rgba(255,75,62,0.15), rgba(255,75,62,0.25)); color: var(--error); border: 1px solid var(--error); border-bottom: 3px solid var(--resistance-dark); margin-top: 12px; }
         
         input, select {
             width: 100%; padding: 14px; margin-bottom: 16px; background: var(--surface); color: var(--text);
@@ -115,13 +117,12 @@
         input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(201,160,52,0.2); }
         
         .card {
-            background: var(--surface);
-            background-image: linear-gradient(135deg, rgba(201,160,52,0.05), transparent 40%);
+            background: var(--surface); background-image: linear-gradient(135deg, rgba(201,160,52,0.05), transparent 40%);
             padding: 16px; border-radius: 4px; width: 100%; box-sizing: border-box; margin-bottom: 16px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: left;
             border: 1px solid var(--line); border-left: 4px solid var(--resistance); position: relative;
         }
-        .card h3 { margin-top: 0; color: var(--primary); font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; font-size: 1.4rem; }
+        .card h3 { color: var(--primary); font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; font-size: 1.4rem; margin-top:0; margin-bottom: 12px;}
         
         ul { list-style: none; padding: 0; margin: 0; width: 100%; }
         li {
@@ -135,14 +136,7 @@
         #reader { width: 100%; background: #000; border-radius: 10px; overflow: hidden; margin-bottom: 16px; transform: translateZ(0); border: 2px solid var(--primary-dim); }
         #reader video { width: 100% !important; border-radius: 8px; }
 
-        .status-dot {
-            width: 14px; height: 14px; background-color: var(--error); border-radius: 50%;
-            position: fixed; top: 16px; right: 16px; z-index: 9999;
-            transition: background-color 0.3s ease; box-shadow: 0 0 6px rgba(255,75,62,0.8); border: 2px solid rgba(0,0,0,0.6);
-        }
-        .status-dot.connected { background-color: var(--primary); box-shadow: 0 0 6px rgba(201,160,52,0.8); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(201,160,52,0.6); } 70% { box-shadow: 0 0 0 9px rgba(201,160,52,0); } 100% { box-shadow: 0 0 0 0 rgba(201,160,52,0); } }
-
+        /* --- MODAL --- */
         .modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(4,3,2,0.85); z-index: 10000; justify-content: center; align-items: center;
@@ -157,16 +151,29 @@
         .modal-content h3 { margin-top: 0; color: var(--primary); margin-bottom: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 0.05em; }
         .modal-content p { line-height: 1.5; margin-bottom: 24px; white-space: pre-line; }
 
+        /* --- STICKY FOOTER --- */
         .version-footer {
-            text-align: center; font-size: 0.75rem; color: var(--muted);
-            margin-top: 40px; padding-top: 10px; border-top: 1px solid var(--line);
-            width: 100%; max-width: 500px; margin-left: auto; margin-right: auto;
-            text-transform: uppercase; letter-spacing: 0.1em;
+            width: 100%; padding: 12px 16px; background: var(--surface-raised); border-top: 2px solid var(--primary-dim);
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: auto; /* Pushes to absolute bottom of flex container */
+            z-index: 10;
         }
+        .footer-text {
+            color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;
+            text-align: right; line-height: 1.4;
+        }
+        
+        .mute-btn {
+            position: static; width: 38px; height: 38px; border-radius: 50%; padding: 0; margin: 0;
+            background: var(--surface); border: 1px solid var(--primary-dim); 
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+        .mute-btn svg { width: 18px; height: 18px; }
 
         .mask-icon { display: block; margin: 0 auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8)); }
-        .mask-icon.hero { width: 130px; height: auto; margin-bottom: 16px; }
-        .mask-icon.new-sprite { width: 44px; height: auto; margin: 0; }
+        .mask-icon.hero { width: 120px; height: auto; margin-bottom: 16px; }
+        .mask-icon.new-sprite { width: 32px; height: auto; margin: 0; }
 
         .brand-eyebrow { font-family: 'Share Tech Mono', monospace; color: var(--resistance); letter-spacing: 0.35em; font-size: 0.7rem; text-transform: uppercase; margin-bottom: 6px; }
         .brand-title { font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; color: var(--primary); letter-spacing: 0.08em; margin: 4px 0 6px 0; line-height: 1; text-shadow: 0 0 18px rgba(201,160,52,0.35); }
@@ -180,58 +187,33 @@
         .corner-frame::after { bottom:-2px; left:-2px; border-bottom:3px solid var(--primary); border-left:3px solid var(--primary); }
         .corner-frame .cf-tr { top:-2px; right:-2px; border-top:3px solid var(--primary); border-right:3px solid var(--primary); }
         .corner-frame .cf-br { bottom:-2px; right:-2px; border-bottom:3px solid var(--primary); border-right:3px solid var(--primary); }
-
         .scan-sweep {
             position: absolute; left: 6%; right: 6%; height: 2px; top: 0;
             background: linear-gradient(90deg, transparent, var(--primary), transparent);
             box-shadow: 0 0 8px 2px rgba(201,160,52,0.7); animation: sweep 2.6s linear infinite; pointer-events: none; z-index: 3;
         }
         @keyframes sweep { 0% { top: 4%; opacity: 0.9; } 95% { top: 94%; opacity: 0.9; } 100% { top: 94%; opacity: 0; } }
-        @keyframes breathe { 0%, 100% { filter: drop-shadow(0 6px 16px rgba(0,0,0,0.6)); } 50% { filter: drop-shadow(0 6px 16px rgba(0,0,0,0.6)) drop-shadow(0 0 18px rgba(255,75,62,0.3)); } }
-
-        .mute-btn {
-            position: fixed; top: 14px; left: 16px; z-index: 9999; width: 34px; height: 34px; border-radius: 50%;
-            background: var(--surface-raised); border: 1px solid var(--primary-dim); display: flex; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.5); padding: 0; margin: 0;
-        }
-        .mute-btn svg { width: 16px; height: 16px; }
-
-        @media (min-width: 480px) { .brand-title { font-size: 3rem; } }
     </style>
 </head>
 <body>
 
-    <!-- DOM Audio Element (Meest stabiel voor mobiele loops) -->
     <audio id="heist-bg-music" src="https://incompetech.com/music/royalty-free/mp3-royaltyfree/Stay%20the%20Course.mp3" loop preload="auto" style="display:none;"></audio>
 
-    <!-- INLINE SVG SPRITE (Rood Dalí Masker) -->
     <svg width="0" height="0" style="position:absolute">
         <defs>
             <symbol id="svg-dali" viewBox="0 0 100 120">
-                <!-- Gezicht Achtergrond -->
                 <path d="M 15 25 C 15 -10, 85 -10, 85 25 C 95 60, 80 110, 50 115 C 20 110, 5 60, 15 25 Z" fill="#da3232" stroke="#111" stroke-width="2"/>
-                
-                <!-- Ogen & Wenkbrauwen -->
                 <path d="M 22 42 Q 35 30 45 42" fill="none" stroke="#111" stroke-width="4" stroke-linecap="round"/>
                 <path d="M 78 42 Q 65 30 55 42" fill="none" stroke="#111" stroke-width="4" stroke-linecap="round"/>
-                
                 <ellipse cx="32" cy="52" rx="10" ry="6" fill="#fff" stroke="#111" stroke-width="2"/>
                 <circle cx="32" cy="52" r="3" fill="#111"/>
-                
                 <ellipse cx="68" cy="52" rx="10" ry="6" fill="#fff" stroke="#111" stroke-width="2"/>
                 <circle cx="68" cy="52" r="3" fill="#111"/>
-                
-                <!-- Neus -->
                 <path d="M 50 50 L 45 80 Q 50 85 55 80 Z" fill="none" stroke="#111" stroke-width="2"/>
                 <path d="M 40 82 Q 50 78 60 82" fill="none" stroke="#111" stroke-width="2"/>
-                
-                <!-- Snor (Gekruld) -->
                 <path d="M 18 90 Q 40 75 50 88 Q 60 75 82 90 Q 88 100 75 80 Q 50 105 25 80 Q 12 100 18 90 Z" fill="#111"/>
-                
-                <!-- Mond / Kin -->
                 <path d="M 42 102 Q 50 100 58 102" fill="none" stroke="#111" stroke-width="2"/>
             </symbol>
-            
             <symbol id="svg-seal" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="46" fill="none" stroke="#b3212e" stroke-width="4" stroke-dasharray="6 4"/>
                 <circle cx="50" cy="50" r="34" fill="none" stroke="#b3212e" stroke-width="2"/>
@@ -240,24 +222,29 @@
         </defs>
     </svg>
 
-    <button class="mute-btn" id="mute-btn" onclick="toggleMute()" title="Geluid aan/uit" type="button">
-        <svg id="mute-icon-on" viewBox="0 0 24 24" fill="none" stroke="#c9a034" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 8 9 13 4 13 20 8 15 3 15 3 9" fill="#c9a034"/><path d="M16 8a5 5 0 0 1 0 8"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
-        <svg id="mute-icon-off" viewBox="0 0 24 24" fill="none" stroke="#c9a034" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polygon points="3 9 8 9 13 4 13 20 8 15 3 15 3 9" fill="#c9a034"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>
-    </button>
-
-    <div id="connection-indicator" class="status-dot" title="Verbinding met de kluis"></div>
+    <div id="global-header" class="global-header" style="display: none;">
+        <div class="header-left">
+            <svg class="mask-icon new-sprite"><use href="#svg-dali"/></svg>
+            <h2 id="display-team">Team</h2>
+        </div>
+        <div class="header-center">
+            <div class="lives-display" id="lives-display" onclick="loseLife()" title="Tik om een leven te verliezen">❤️❤️❤️</div>
+        </div>
+        <div class="header-right">
+            <div class="time" id="time-display">00:00</div>
+            <div id="connection-indicator" class="status-dot" title="Verbinding met de kluis"></div>
+        </div>
+    </div>
 
     <div class="content-wrapper">
-        <!-- Laadscherm -->
         <div id="loading-screen" class="screen active">
-            <svg class="mask-icon hero" style="animation: fadeIn 0.8s ease, breathe 3s ease-in-out infinite;"><use href="#svg-dali"/></svg>
+            <svg class="mask-icon hero"><use href="#svg-dali"/></svg>
             <div class="brand-eyebrow">Toegang tot de kluis</div>
-            <h2 style="color:var(--primary); font-size:1.6rem;">Speldata Laden...</h2>
+            <h2 style="color:var(--primary); font-size:1.6rem; margin-bottom:12px;">Speldata Laden...</h2>
             <p id="loading-message" class="brand-sub">De verbinding met de kluis wordt gecontroleerd.</p>
             <button id="retry-btn" class="secondary" style="display:none;" onclick="fetchGameData()">Opnieuw Proberen</button>
         </div>
 
-        <!-- Login Scherm -->
         <div id="login-screen" class="screen">
             <svg class="mask-icon hero"><use href="#svg-dali"/></svg>
             <div class="brand-eyebrow">Operatie · Vertrouwelijk</div>
@@ -267,23 +254,9 @@
             <button onclick="startGame()">Start Missie</button>
         </div>
 
-        <!-- Hoofdscherm -->
         <div id="main-screen" class="screen">
-            <div class="header">
-                <div class="header-left">
-                    <svg class="mask-icon new-sprite"><use href="#svg-dali"/></svg>
-                    <h2 id="display-team">Team</h2>
-                </div>
-                <div class="header-right">
-                    <div class="time" id="time-display">00:00</div>
-                    <div class="lives-display" id="lives-display" onclick="loseLife()" title="Tik om een leven te verliezen">❤️❤️❤️</div>
-                </div>
-            </div>
-
             <button onclick="openScanner()">⌕ Scan nieuwe QR-code</button>
             <button class="secondary" onclick="openCombine()">⚙ Combineer items</button>
-
-            <!-- HINTS KNOP -->
             <button id="hints-btn" class="secondary" style="display:none; margin-bottom: 16px;" onclick="showScreen('hints-screen')">Lees alle hints (0)</button>
 
             <div class="card">
@@ -293,37 +266,15 @@
             </div>
         </div>
 
-        <!-- Hints Scherm -->
         <div id="hints-screen" class="screen">
-            <div class="header">
-                <div class="header-left">
-                    <svg class="mask-icon new-sprite"><use href="#svg-dali"/></svg>
-                    <h2>Hints</h2>
-                </div>
-                <div class="header-right">
-                    <div class="time" id="hints-time-display">00:00</div>
-                    <div class="lives-display hints-lives-display">❤️❤️❤️</div>
-                </div>
-            </div>
+            <h2 style="color:var(--primary); margin-bottom:16px;">Gevonden Hints</h2>
             <div id="hints-list" style="width:100%; text-align:left; margin-bottom: 16px;"></div>
             <button class="secondary" onclick="showScreen('main-screen')">Terug naar Inventaris</button>
         </div>
 
-        <!-- Scanner Scherm -->
         <div id="scanner-screen" class="screen">
-            <div class="header">
-                <div class="header-left">
-                    <svg class="mask-icon new-sprite"><use href="#svg-dali"/></svg>
-                    <h2 id="scanner-team-display">Team</h2>
-                </div>
-                <div class="header-right">
-                    <div class="time" id="scanner-time-display">00:00</div>
-                    <div class="lives-display scanner-lives-display">❤️❤️❤️</div>
-                </div>
-            </div>
-            
             <div class="brand-eyebrow">Doelwit lokaliseren</div>
-            <h2 style="color:var(--primary); margin-top:0;">Scan QR-code</h2>
+            <h2 style="color:var(--primary); margin-bottom:16px;">Scan QR-code</h2>
             <div class="corner-frame" style="width:100%; position:relative;">
                 <div class="scan-sweep"></div>
                 <div id="reader"></div>
@@ -333,18 +284,8 @@
             <button class="secondary" style="margin-top:20px;" onclick="closeScanner()">Annuleren</button>
         </div>
 
-        <!-- Combineer Scherm -->
         <div id="combine-screen" class="screen">
-            <div class="header">
-                <div class="header-left">
-                    <svg class="mask-icon new-sprite"><use href="#svg-dali"/></svg>
-                    <h2>Combineer</h2>
-                </div>
-                <div class="header-right">
-                    <div class="time" id="combine-time-display">00:00</div>
-                    <div class="lives-display combine-lives-display">❤️❤️❤️</div>
-                </div>
-            </div>
+            <h2 style="color:var(--primary); margin-bottom:8px;">Combineer</h2>
             <p class="brand-sub" style="margin-bottom:12px;">Kies twee unieke items. Een foute combinatie kost 1 minuut straftijd!</p>
             <select id="item-select-1"><option value="">Kies Voorwerp 1</option></select>
             <select id="item-select-2"><option value="">Kies Voorwerp 2</option></select>
@@ -352,28 +293,16 @@
             <button class="secondary" onclick="showScreen('main-screen')">Terug</button>
         </div>
 
-        <!-- Resultaat / Verhaal Scherm -->
         <div id="story-screen" class="screen">
-            <div class="header">
-                <div class="header-left">
-                    <svg class="mask-icon new-sprite"><use href="#svg-dali"/></svg>
-                    <h2 id="story-team-display">Team</h2>
-                </div>
-                <div class="header-right">
-                    <div class="time" id="story-time-display">00:00</div>
-                    <div class="lives-display story-lives-display">❤️❤️❤️</div>
-                </div>
-            </div>
-            <svg class="mask-icon" style="width:60px; margin-bottom:8px;"><use href="#svg-seal"/></svg>
+            <svg class="mask-icon" style="width:60px; margin-bottom:12px;"><use href="#svg-seal"/></svg>
             <div class="card">
                 <h3 id="story-title">Resultaat</h3>
-                <p id="story-text" style="white-space: pre-line;"></p>
+                <p id="story-text" style="white-space: pre-line; margin-bottom:0;"></p>
             </div>
             <button onclick="showScreen('main-screen')">Begrepen, ga door!</button>
         </div>
     </div>
 
-    <!-- Verhaal Popup Modal -->
     <div id="item-modal" class="modal">
         <div class="modal-content">
             <h3 id="modal-title">Titel</h3>
@@ -384,7 +313,14 @@
     </div>
 
     <div class="version-footer">
-        De Kraak van de Eeuw — Engine Versie 2.1
+        <button class="mute-btn" id="mute-btn" onclick="toggleMute()" title="Geluid aan/uit" type="button">
+            <svg id="mute-icon-on" viewBox="0 0 24 24" fill="none" stroke="#c9a034" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 8 9 13 4 13 20 8 15 3 15 3 9" fill="#c9a034"/><path d="M16 8a5 5 0 0 1 0 8"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+            <svg id="mute-icon-off" viewBox="0 0 24 24" fill="none" stroke="#c9a034" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polygon points="3 9 8 9 13 4 13 20 8 15 3 15 3 9" fill="#c9a034"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>
+        </button>
+        <div class="footer-text">
+            De Kraak van de Eeuw<br>
+            <span style="color:var(--primary-dim);">Engine Versie 2.2</span>
+        </div>
     </div>
 
     <script>
@@ -449,7 +385,6 @@
             }).catch(e => console.log("Achtergrondsync mislukt:", e));
         }
 
-        // --- ROBUUSTE OPVRAAG LOGICA ---
         function fetchGameData() {
             setConnectionStatus(false);
             const retryBtn = document.getElementById('retry-btn');
@@ -470,15 +405,12 @@
                     if (csvText.trim().toLowerCase().startsWith('<!doctype html>') || csvText.includes('<html')) {
                         throw new Error("De Sheet lijkt niet meer openbaar (HTML teruggekregen).");
                     }
-                    
                     parseGameData(csvText);
-                    
                     if (Object.keys(knownItems).length === 0) {
                         throw new Error("De sheet werd geladen, maar bevat geen leesbare data.");
                     }
                     
                     setConnectionStatus(true);
-                    document.getElementById('loading-screen').classList.remove('active');
                     if (loadLocalState()) {
                         updateUI();
                         showScreen('main-screen');
@@ -487,7 +419,6 @@
                     }
                 })
                 .catch(err => {
-                    console.error("Fout bij ophalen kluis:", err);
                     setConnectionStatus(false);
                     retryBtn.style.display = 'block';
                     msgEl.innerText = `ERROR: ${err.message}\nControleer de internetverbinding en de instellingen van de Google Sheet.`;
@@ -515,14 +446,10 @@
                 
                 if (lives <= 0) {
                     alert("⚠️ JULLIE ZIJN GEARRESTEERD! ⚠️\n\nAlle bewijsstukken in jullie inventaris zijn in beslag genomen! Jullie zullen deze opnieuw moeten verzamelen. De gevonden hints blijven wel bewaard in jullie notitieblokje.");
-                    
-                    // Filter de inventaris en behoud alleen de hints
                     inventory = inventory.filter(item => {
                         const itemData = knownItems[item.id] || { type: 'inventaris' };
                         return itemData.type.includes('hint');
                     });
-                    
-                    // Reset levens
                     lives = 3;
                 }
                 
@@ -550,9 +477,7 @@
 
         function closeScanner() {
             if (html5QrcodeScanner) {
-                html5QrcodeScanner.stop()
-                    .then(() => html5QrcodeScanner.clear())
-                    .catch(() => {});
+                html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear()).catch(() => {});
             }
             showScreen('main-screen');
         }
@@ -668,15 +593,18 @@
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
+            
+            // Toon de globale header op alle schermen behalve login/loading
+            const globalHeader = document.getElementById('global-header');
+            if (id === 'login-screen' || id === 'loading-screen') {
+                globalHeader.style.display = 'none';
+            } else {
+                globalHeader.style.display = 'grid';
+            }
         }
 
         function updateUI() {
-            // Update team namen over de verschillende schermen
             document.getElementById('display-team').innerText = teamName;
-            const scannerTeam = document.getElementById('scanner-team-display');
-            if(scannerTeam) scannerTeam.innerText = teamName;
-            const storyTeam = document.getElementById('story-team-display');
-            if(storyTeam) storyTeam.innerText = teamName;
             
             const invList = document.getElementById('inventory-list');
             const hintsList = document.getElementById('hints-list');
@@ -718,11 +646,9 @@
                 hintsBtn.style.display = 'none';
             }
 
-            // Update hartjes globaal over alle schermen
+            // Update hartjes
             const heartsStr = '❤️'.repeat(lives) + '🖤'.repeat(3 - lives);
-            document.querySelectorAll('.lives-display').forEach(el => {
-                el.innerText = heartsStr;
-            });
+            document.getElementById('lives-display').innerText = heartsStr;
 
             updateTimerUI();
         }
@@ -733,24 +659,10 @@
             const totalSeconds = Math.floor(elapsedMs / 1000) + (penaltyMinutes * 60);
             const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
             const s = (totalSeconds % 60).toString().padStart(2, '0');
-            
-            const timeString = `${m}:${s}`;
-            document.getElementById('time-display').innerText = timeString;
-            
-            const hintTime = document.getElementById('hints-time-display');
-            if(hintTime) hintTime.innerText = timeString;
-            
-            const combineTime = document.getElementById('combine-time-display');
-            if(combineTime) combineTime.innerText = timeString;
-
-            const scannerTime = document.getElementById('scanner-time-display');
-            if(scannerTime) scannerTime.innerText = timeString;
-
-            const storyTime = document.getElementById('story-time-display');
-            if(storyTime) storyTime.innerText = timeString;
+            document.getElementById('time-display').innerText = `${m}:${s}`;
         }
 
-        // --- KOGELVRIJE CSV PARSER ---
+        // --- CSV PARSER ---
         function parseGameData(csvText) {
             let lines = [];
             let row = [""];
@@ -759,20 +671,14 @@
             for (let i = 0; i < csvText.length; i++) {
                 let char = csvText[i];
                 let nextChar = csvText[i + 1];
-
                 if (char === '"') {
-                    if (inQuotes && nextChar === '"') {
-                        row[row.length - 1] += '"';
-                        i++; 
-                    } else {
-                        inQuotes = !inQuotes;
-                    }
+                    if (inQuotes && nextChar === '"') { row[row.length - 1] += '"'; i++; } 
+                    else { inQuotes = !inQuotes; }
                 } else if (char === ',' && !inQuotes) {
                     row.push("");
                 } else if ((char === '\n' || char === '\r') && !inQuotes) {
                     if (char === '\r' && nextChar === '\n') { i++; }
-                    lines.push(row);
-                    row = [""];
+                    lines.push(row); row = [""];
                 } else {
                     row[row.length - 1] += char;
                 }
@@ -782,7 +688,6 @@
             lines.forEach((cols, index) => {
                 if (index === 0) return; 
                 const cleanCols = cols.map(v => (v || "").trim().replace(/^"|"$/g, ''));
-                
                 while(cleanCols.length < 12) cleanCols.push("");
 
                 let offset = 0;
@@ -799,16 +704,13 @@
 
                 if (!isNaN(resId) && resNaam) {
                     knownItems[resId] = { name: resNaam, type: typeInfo, story: story };
-                    
                     if (!isNaN(idA) && !isNaN(idB)) {
                         combinations[`${idA}_${idB}`] = { resId, resName: resNaam, story };
                         combinations[`${idB}_${idA}`] = { resId, resName: resNaam, story };
                     }
-                    
                     if (!isNaN(idA) && !knownItems[idA]) knownItems[idA] = { name: naamA || `Voorwerp #${idA}`, type: "inventaris", story: "" };
                     if (!isNaN(idB) && !knownItems[idB]) knownItems[idB] = { name: naamB || `Voorwerp #${idB}`, type: "inventaris", story: "" };
-                } 
-                else if (!isNaN(idA) && naamA) {
+                } else if (!isNaN(idA) && naamA) {
                     if (!knownItems[idA]) {
                         knownItems[idA] = { name: naamA, type: typeInfo, story: story };
                     } else {
@@ -838,9 +740,6 @@
         }
     </script>
 
-    <!-- ============================================================
-         HEIST AUDIO-ENGINE
-         ============================================================ -->
     <script>
         let audioCtx = null;
         let musicMuted = (localStorage.getItem('kraak_muted') === '1');
@@ -859,15 +758,12 @@
 
         function startHeistAudio() {
             if (musicStarted) return;
-
             bgMusicEl = document.getElementById('heist-bg-music');
             if (bgMusicEl) {
                 bgMusicEl.volume = musicMuted ? 0 : 0.35;
                 const playPromise = bgMusicEl.play();
                 if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        musicStarted = true;
-                    }).catch(() => {});
+                    playPromise.then(() => { musicStarted = true; }).catch(() => {});
                 }
             }
         }
@@ -875,15 +771,10 @@
         function toggleMute() {
             musicMuted = !musicMuted;
             localStorage.setItem('kraak_muted', musicMuted ? '1' : '0');
-
             bgMusicEl = document.getElementById('heist-bg-music');
-            if (bgMusicEl) {
-                bgMusicEl.volume = musicMuted ? 0 : 0.35;
-            }
-
+            if (bgMusicEl) { bgMusicEl.volume = musicMuted ? 0 : 0.35; }
             document.getElementById('mute-icon-on').style.display = musicMuted ? 'none' : 'block';
             document.getElementById('mute-icon-off').style.display = musicMuted ? 'block' : 'none';
-
             if (!musicMuted) ensureAudioCtx();
         }
 
@@ -956,9 +847,7 @@
         });
 
         function resumeAudioIfGameActive() {
-            if (typeof startTime !== 'undefined' && startTime && !musicStarted) {
-                startHeistAudio();
-            }
+            if (typeof startTime !== 'undefined' && startTime && !musicStarted) { startHeistAudio(); }
         }
         setInterval(resumeAudioIfGameActive, 1000);
 
@@ -975,29 +864,20 @@
         document.addEventListener('keydown', unlockAudioOnInteraction);
 
         const _startGame = startGame;
-        startGame = function() {
-            _startGame.apply(this, arguments);
-            startHeistAudio();
-        };
+        startGame = function() { _startGame.apply(this, arguments); startHeistAudio(); };
 
         const _onScanSuccess = onScanSuccess;
         onScanSuccess = function(decodedText) {
             const before = inventory.length;
             _onScanSuccess.apply(this, arguments);
-            if (inventory.length > before) {
-                playSfx('scan');
-            }
+            if (inventory.length > before) { playSfx('scan'); }
         };
 
         const _tryCombination = tryCombination;
         tryCombination = function() {
             const before = penaltyMinutes;
             _tryCombination.apply(this, arguments);
-            if (penaltyMinutes > before) {
-                playSfx('alarm');
-            } else {
-                playSfx('success');
-            }
+            if (penaltyMinutes > before) { playSfx('alarm'); } else { playSfx('success'); }
         };
     </script>
 </body>

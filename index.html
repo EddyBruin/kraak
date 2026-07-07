@@ -46,31 +46,34 @@
 
         h2 { font-family: 'Bebas Neue', 'Oswald', sans-serif; letter-spacing: 0.06em; margin: 0; }
 
-        /* --- GLOBALE HEADER (COMPACT & STRAK) --- */
+        /* --- GLOBALE HEADER (EXACT 50PX HOOG) --- */
         .global-header {
             width: 100%; max-width: 500px; margin: 0 auto;
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 2px solid var(--primary); 
-            padding: max(6px, env(safe-area-inset-top)) 12px 6px 12px; 
+            height: 50px; /* Exact 50px */
+            min-height: 50px;
+            max-height: 50px;
+            padding: 0 12px; /* Geen padding boven/onder */
             background-color: var(--bg-deep);
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             z-index: 10;
         }
         
-        .header-left { display: flex; align-items: center; gap: 8px; justify-content: flex-start; flex: 1; min-width: 0; }
+        .header-left { display: flex; align-items: center; gap: 8px; justify-content: flex-start; flex: 1; min-width: 0; height: 100%; }
         .header-left h2 { 
             font-size: 1.4rem; color: var(--primary); text-shadow: 0 0 10px rgba(201,160,52,0.3); 
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1; margin: 0; padding: 0;
         }
         
-        .header-center { display: flex; align-items: center; justify-content: center; flex: 1; }
+        .header-center { display: flex; align-items: center; justify-content: center; flex: 1; height: 100%; }
         .lives-display {
             font-size: 1.1rem; cursor: pointer; user-select: none; line-height: 1; margin: 0;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); transition: transform 0.1s; letter-spacing: -2px;
         }
         .lives-display:active { transform: scale(0.9); }
         
-        .header-right { display: flex; align-items: center; gap: 10px; justify-content: flex-end; flex: 1; }
+        .header-right { display: flex; align-items: center; gap: 10px; justify-content: flex-end; flex: 1; height: 100%; }
         .time { 
             font-family: 'Share Tech Mono', monospace; font-size: 1.1rem; font-weight: bold; color: var(--error); 
             background: var(--bg); border: 1px solid var(--resistance-dark); padding: 2px 8px; border-radius: 4px;
@@ -329,7 +332,7 @@
         </button>
         <div class="footer-text">
             De Kraak van de Eeuw<br>
-            <span style="color:var(--primary-dim);">Engine Versie 2.6</span>
+            <span style="color:var(--primary-dim);">Engine Versie 2.7</span>
         </div>
     </div>
 
@@ -519,21 +522,25 @@
                     syncToDatabase();
                     updateUI();
                     
-                    // --- NIEUWE LOGICA: Is het item te combineren of niet? ---
                     const itemData = knownItems[scannedId];
                     const isHint = itemData.type.includes('hint');
-                    const isCombinable = itemData.isCombinable; // Automatisch berekend in parser
+                    const isCombinable = itemData.isCombinable; 
                     
                     document.getElementById('story-title').innerText = `Gevonden: ${itemData.name}`;
                     
+                    // SLIMME TEKST: Scan-scherm
                     let stText = "";
                     if (isCombinable) {
-                        stText = itemData.hint || "Dit voorwerp kan mogelijk gecombineerd worden met iets anders.";
+                        stText = itemData.hint || "Dit voorwerp kan gecombineerd worden met een ander item. Er is geen extra hint beschikbaar.";
                     } else {
                         stText = itemData.story || "Jullie hebben dit voorwerp veiliggesteld.";
                     }
                     
-                    if (isHint) stText += "\n\n(Dit item is toegevoegd aan jullie Hints-logboek)";
+                    if (isHint) {
+                        // Voor pure hints pakken we de story tekst (wat bij hints meestal de body tekst is)
+                        stText = itemData.story || itemData.hint || "";
+                        stText += "\n\n(Dit item is toegevoegd aan jullie Hints-logboek)";
+                    }
                     
                     document.getElementById('story-text').innerText = stText;
                     showScreen('story-screen');
@@ -598,8 +605,15 @@
             if (!itemData) return;
             document.getElementById('modal-title').innerText = itemData.name;
             
-            // Toont bij klik in Inventaris de Hint/Kolom J
-            document.getElementById('modal-story').innerText = itemData.hint || "Geen extra hint of informatie beschikbaar voor dit voorwerp.";
+            // SLIMME TEKST: Inventaris bekijken (Modal)
+            let modalText = "";
+            if (itemData.isCombinable) {
+                modalText = itemData.hint || "Dit voorwerp is te combineren. Er is geen verdere hint beschikbaar.";
+            } else {
+                modalText = itemData.story || "Dit voorwerp levert geen verdere beschrijving op.";
+            }
+
+            document.getElementById('modal-story').innerText = modalText;
             
             document.getElementById('modal-delete-btn').onclick = () => deleteItem(id);
             document.getElementById('item-modal').classList.add('active');
@@ -645,7 +659,7 @@
             let hintCount = 0;
 
             inventory.forEach(item => {
-                const itemData = knownItems[item.id] || { type: 'inventaris', story: '' };
+                const itemData = knownItems[item.id] || { type: 'inventaris', story: '', hint: '' };
                 const isHint = itemData.type.includes('hint');
                 
                 if (isHint) {
@@ -733,7 +747,7 @@
 
                 if (!isNaN(resId) && resNaam) {
                     if (!knownItems[resId]) {
-                        knownItems[resId] = { name: resNaam, type: typeInfo, story: storyText, hint: hintText };
+                        knownItems[resId] = { name: resNaam, type: typeInfo, story: storyText, hint: hintText, isCombinable: false };
                     } else {
                         knownItems[resId].name = resNaam;
                         knownItems[resId].type = typeInfo;
@@ -747,16 +761,16 @@
                     }
                     
                     if (!isNaN(idA)) {
-                        if (!knownItems[idA]) knownItems[idA] = { name: naamA || `Voorwerp #${idA}`, type: "inventaris", story: "", hint: "" };
+                        if (!knownItems[idA]) knownItems[idA] = { name: naamA || `Voorwerp #${idA}`, type: "inventaris", story: "", hint: "", isCombinable: true };
                         knownItems[idA].isCombinable = true;
                     }
                     if (!isNaN(idB)) {
-                        if (!knownItems[idB]) knownItems[idB] = { name: naamB || `Voorwerp #${idB}`, type: "inventaris", story: "", hint: "" };
+                        if (!knownItems[idB]) knownItems[idB] = { name: naamB || `Voorwerp #${idB}`, type: "inventaris", story: "", hint: "", isCombinable: true };
                         knownItems[idB].isCombinable = true;
                     }
                 } else if (!isNaN(idA) && naamA) {
                     if (!knownItems[idA]) {
-                        knownItems[idA] = { name: naamA, type: typeInfo, story: storyText, hint: hintText };
+                        knownItems[idA] = { name: naamA, type: typeInfo, story: storyText, hint: hintText, isCombinable: false };
                     } else {
                         if (typeInfo && typeInfo !== "inventaris") knownItems[idA].type = typeInfo;
                         if (storyText) knownItems[idA].story = storyText;

@@ -51,10 +51,10 @@
             width: 100%; max-width: 500px; margin: 0 auto;
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 2px solid var(--primary); 
-            height: 50px; /* Exact 50px */
-            min-height: 50px;
+            height: 50px; 
+            min-height: 50px; 
             max-height: 50px;
-            padding: 0 12px; /* Geen padding boven/onder */
+            padding: 0 12px; 
             background-color: var(--bg-deep);
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             z-index: 10;
@@ -332,7 +332,7 @@
         </button>
         <div class="footer-text">
             De Kraak van de Eeuw<br>
-            <span style="color:var(--primary-dim);">Engine Versie 2.7</span>
+            <span style="color:var(--primary-dim);">Engine Versie 2.8</span>
         </div>
     </div>
 
@@ -537,7 +537,6 @@
                     }
                     
                     if (isHint) {
-                        // Voor pure hints pakken we de story tekst (wat bij hints meestal de body tekst is)
                         stText = itemData.story || itemData.hint || "";
                         stText += "\n\n(Dit item is toegevoegd aan jullie Hints-logboek)";
                     }
@@ -599,7 +598,7 @@
             }
         }
 
-        // --- POPUP & VERWIJDER LOGICA ---
+        // --- POPUP LOGICA ---
         function showItemModal(id) {
             const itemData = knownItems[id];
             if (!itemData) return;
@@ -611,6 +610,10 @@
                 modalText = itemData.hint || "Dit voorwerp is te combineren. Er is geen verdere hint beschikbaar.";
             } else {
                 modalText = itemData.story || "Dit voorwerp levert geen verdere beschrijving op.";
+            }
+
+            if (itemData.type.includes('hint')) {
+                modalText = itemData.story || itemData.hint || "Hint...";
             }
 
             document.getElementById('modal-story').innerText = modalText;
@@ -703,7 +706,7 @@
             document.getElementById('time-display').innerText = `${m}:${s}`;
         }
 
-        // --- CSV PARSER ---
+        // --- VERNIEUWDE CSV PARSER ---
         function parseGameData(csvText) {
             let lines = [];
             let row = [""];
@@ -745,36 +748,43 @@
                 let hintText = cleanCols[9 + offset];  // Kolom J
                 let typeInfo = cleanCols[10 + offset] ? cleanCols[10 + offset].toLowerCase().trim() : "inventaris";
 
+                // Registreer Item A (altijd, indien aanwezig) met de teksten van zijn rij
+                if (!isNaN(idA)) {
+                    if (!knownItems[idA]) {
+                        knownItems[idA] = { name: naamA || `Voorwerp #${idA}`, type: typeInfo, story: storyText, hint: hintText, isCombinable: false };
+                    } else {
+                        if (naamA) knownItems[idA].name = naamA;
+                        if (typeInfo && typeInfo !== "inventaris") knownItems[idA].type = typeInfo;
+                        if (storyText) knownItems[idA].story = storyText;
+                        if (hintText) knownItems[idA].hint = hintText;
+                    }
+                }
+
+                // Registreer Item B (als simpele placeholder indien aanwezig)
+                if (!isNaN(idB)) {
+                    if (!knownItems[idB]) {
+                        knownItems[idB] = { name: naamB || `Voorwerp #${idB}`, type: "inventaris", story: "", hint: "", isCombinable: false };
+                    }
+                }
+
+                // Registreer Resultaat item (Item C) indien aanwezig
                 if (!isNaN(resId) && resNaam) {
                     if (!knownItems[resId]) {
                         knownItems[resId] = { name: resNaam, type: typeInfo, story: storyText, hint: hintText, isCombinable: false };
                     } else {
                         knownItems[resId].name = resNaam;
-                        knownItems[resId].type = typeInfo;
-                        knownItems[resId].story = storyText;
-                        knownItems[resId].hint = hintText;
+                        if (typeInfo && typeInfo !== "inventaris") knownItems[resId].type = typeInfo;
+                        if (storyText) knownItems[resId].story = storyText;
+                        if (hintText) knownItems[resId].hint = hintText;
                     }
 
+                    // Koppel A en B als combineerbaar
                     if (!isNaN(idA) && !isNaN(idB)) {
                         combinations[`${idA}_${idB}`] = { resId, resName: resNaam, story: storyText, hint: hintText };
                         combinations[`${idB}_${idA}`] = { resId, resName: resNaam, story: storyText, hint: hintText };
-                    }
-                    
-                    if (!isNaN(idA)) {
-                        if (!knownItems[idA]) knownItems[idA] = { name: naamA || `Voorwerp #${idA}`, type: "inventaris", story: "", hint: "", isCombinable: true };
-                        knownItems[idA].isCombinable = true;
-                    }
-                    if (!isNaN(idB)) {
-                        if (!knownItems[idB]) knownItems[idB] = { name: naamB || `Voorwerp #${idB}`, type: "inventaris", story: "", hint: "", isCombinable: true };
-                        knownItems[idB].isCombinable = true;
-                    }
-                } else if (!isNaN(idA) && naamA) {
-                    if (!knownItems[idA]) {
-                        knownItems[idA] = { name: naamA, type: typeInfo, story: storyText, hint: hintText, isCombinable: false };
-                    } else {
-                        if (typeInfo && typeInfo !== "inventaris") knownItems[idA].type = typeInfo;
-                        if (storyText) knownItems[idA].story = storyText;
-                        if (hintText) knownItems[idA].hint = hintText;
+                        
+                        if (knownItems[idA]) knownItems[idA].isCombinable = true;
+                        if (knownItems[idB]) knownItems[idB].isCombinable = true;
                     }
                 }
             });

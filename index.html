@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>De Kraak van de Eeuw</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -51,7 +51,7 @@
             width: 100%; max-width: 500px; margin: 0 auto;
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 2px solid var(--primary); 
-            padding: 10px 16px; 
+            padding: max(6px, env(safe-area-inset-top)) 12px 6px 12px; 
             background-color: var(--bg-deep);
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             z-index: 10;
@@ -205,10 +205,8 @@
 </head>
 <body>
 
-    <!-- Audio Element -->
     <audio id="heist-bg-music" src="https://incompetech.com/music/royalty-free/mp3-royaltyfree/Stay%20the%20Course.mp3" loop preload="auto" style="display:none;"></audio>
 
-    <!-- INLINE SVG SPRITE (Veilig verborgen) -->
     <svg style="visibility:hidden; width:0; height:0; position:absolute; top:0; left:0; pointer-events:none;">
         <defs>
             <symbol id="svg-dali" viewBox="0 0 100 120">
@@ -232,8 +230,7 @@
         </defs>
     </svg>
 
-    <!-- GLOBALE HEADER (Zichtbaar na inloggen, ALTIJD BOVENAAN) -->
-    <div id="global-header" class="global-header" style="height: 50px;">
+    <div id="global-header" class="global-header" style="display: none;">
         <div class="header-left">
             <svg class="mask-icon new-sprite"><use href="#svg-dali"/></svg>
             <h2 id="display-team">Team</h2>
@@ -247,9 +244,7 @@
         </div>
     </div>
 
-    <!-- CONTENT WRAPPER -->
     <div class="content-wrapper">
-        <!-- Laadscherm -->
         <div id="loading-screen" class="screen active">
             <div style="margin-top: 40px;"></div> 
             <svg class="mask-icon hero"><use href="#svg-dali"/></svg>
@@ -259,7 +254,6 @@
             <button id="retry-btn" class="secondary" style="display:none;" onclick="fetchGameData()">Opnieuw Proberen</button>
         </div>
 
-        <!-- Login Scherm -->
         <div id="login-screen" class="screen">
             <div style="margin-top: 40px;"></div>
             <svg class="mask-icon hero"><use href="#svg-dali"/></svg>
@@ -270,7 +264,6 @@
             <button onclick="startGame()">Start Missie</button>
         </div>
 
-        <!-- Hoofdscherm (Inventaris) -->
         <div id="main-screen" class="screen">
             <button onclick="openScanner()">⌕ Scan nieuwe QR-code</button>
             <button class="secondary" onclick="openCombine()">⚙ Combineer items</button>
@@ -283,14 +276,12 @@
             </div>
         </div>
 
-        <!-- Hints Scherm -->
         <div id="hints-screen" class="screen">
             <h2 style="color:var(--primary); margin-bottom:16px;">Gevonden Hints</h2>
             <div id="hints-list" style="width:100%; text-align:left; margin-bottom: 16px;"></div>
             <button class="secondary" onclick="showScreen('main-screen')">Terug naar Inventaris</button>
         </div>
 
-        <!-- Scanner Scherm -->
         <div id="scanner-screen" class="screen">
             <div class="brand-eyebrow">Doelwit lokaliseren</div>
             <h2 style="color:var(--primary); margin-bottom:16px;">Scan QR-code</h2>
@@ -303,7 +294,6 @@
             <button class="secondary" style="margin-top:20px;" onclick="closeScanner()">Annuleren</button>
         </div>
 
-        <!-- Combineer Scherm -->
         <div id="combine-screen" class="screen">
             <h2 style="color:var(--primary); margin-bottom:8px;">Combineer</h2>
             <p class="brand-sub" style="margin-bottom:12px;">Kies twee unieke items. Een foute combinatie kost 1 minuut straftijd!</p>
@@ -313,7 +303,6 @@
             <button class="secondary" onclick="showScreen('main-screen')">Terug</button>
         </div>
 
-        <!-- Resultaat Scherm -->
         <div id="story-screen" class="screen">
             <svg class="mask-icon" style="width:60px; margin-bottom:12px;"><use href="#svg-seal"/></svg>
             <div class="card">
@@ -324,7 +313,6 @@
         </div>
     </div>
 
-    <!-- Verhaal Popup Modal -->
     <div id="item-modal" class="modal">
         <div class="modal-content">
             <h3 id="modal-title">Titel</h3>
@@ -334,7 +322,6 @@
         </div>
     </div>
 
-    <!-- STICKY FOOTER MET GELUIDSKNOP -->
     <div class="version-footer">
         <button class="mute-btn" id="mute-btn" onclick="toggleMute()" title="Geluid aan/uit" type="button">
             <svg id="mute-icon-on" viewBox="0 0 24 24" fill="none" stroke="#c9a034" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 8 9 13 4 13 20 8 15 3 15 3 9" fill="#c9a034"/><path d="M16 8a5 5 0 0 1 0 8"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
@@ -342,7 +329,7 @@
         </button>
         <div class="footer-text">
             De Kraak van de Eeuw<br>
-            <span style="color:var(--primary-dim);">Engine Versie 2.4</span>
+            <span style="color:var(--primary-dim);">Engine Versie 2.6</span>
         </div>
     </div>
 
@@ -528,11 +515,28 @@
                     inventory.push({ id: scannedId, name: knownItems[scannedId].name });
                     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
                     
-                    const isHint = knownItems[scannedId].type.includes('hint');
-                    alert(`Gevonden: ${knownItems[scannedId].name}! ${isHint ? "(Toegevoegd aan Hints)" : ""}`);
-                    
                     saveLocalState();
                     syncToDatabase();
+                    updateUI();
+                    
+                    // --- NIEUWE LOGICA: Is het item te combineren of niet? ---
+                    const itemData = knownItems[scannedId];
+                    const isHint = itemData.type.includes('hint');
+                    const isCombinable = itemData.isCombinable; // Automatisch berekend in parser
+                    
+                    document.getElementById('story-title').innerText = `Gevonden: ${itemData.name}`;
+                    
+                    let stText = "";
+                    if (isCombinable) {
+                        stText = itemData.hint || "Dit voorwerp kan mogelijk gecombineerd worden met iets anders.";
+                    } else {
+                        stText = itemData.story || "Jullie hebben dit voorwerp veiliggesteld.";
+                    }
+                    
+                    if (isHint) stText += "\n\n(Dit item is toegevoegd aan jullie Hints-logboek)";
+                    
+                    document.getElementById('story-text').innerText = stText;
+                    showScreen('story-screen');
                 }
             } else {
                 alert("QR-code niet herkend.");
@@ -593,7 +597,9 @@
             const itemData = knownItems[id];
             if (!itemData) return;
             document.getElementById('modal-title').innerText = itemData.name;
-            document.getElementById('modal-story').innerText = itemData.story || "Dit is een basisvoorwerp. Er is geen verdere beschrijving beschikbaar.";
+            
+            // Toont bij klik in Inventaris de Hint/Kolom J
+            document.getElementById('modal-story').innerText = itemData.hint || "Geen extra hint of informatie beschikbaar voor dit voorwerp.";
             
             document.getElementById('modal-delete-btn').onclick = () => deleteItem(id);
             document.getElementById('item-modal').classList.add('active');
@@ -621,7 +627,7 @@
             if (id === 'login-screen' || id === 'loading-screen') {
                 globalHeader.style.display = 'none';
             } else {
-                globalHeader.style.display = 'flex'; // Zorgt dat de flex layout aangaat
+                globalHeader.style.display = 'flex'; 
             }
         }
 
@@ -720,23 +726,41 @@
                 let naamB = cleanCols[5 + offset];
                 let resId = parseInt(cleanCols[6 + offset]);
                 let resNaam = cleanCols[7 + offset];
-                let story = cleanCols[8 + offset];
+                
+                let storyText = cleanCols[8 + offset]; // Kolom I
+                let hintText = cleanCols[9 + offset];  // Kolom J
                 let typeInfo = cleanCols[10 + offset] ? cleanCols[10 + offset].toLowerCase().trim() : "inventaris";
 
                 if (!isNaN(resId) && resNaam) {
-                    knownItems[resId] = { name: resNaam, type: typeInfo, story: story };
-                    if (!isNaN(idA) && !isNaN(idB)) {
-                        combinations[`${idA}_${idB}`] = { resId, resName: resNaam, story };
-                        combinations[`${idB}_${idA}`] = { resId, resName: resNaam, story };
+                    if (!knownItems[resId]) {
+                        knownItems[resId] = { name: resNaam, type: typeInfo, story: storyText, hint: hintText };
+                    } else {
+                        knownItems[resId].name = resNaam;
+                        knownItems[resId].type = typeInfo;
+                        knownItems[resId].story = storyText;
+                        knownItems[resId].hint = hintText;
                     }
-                    if (!isNaN(idA) && !knownItems[idA]) knownItems[idA] = { name: naamA || `Voorwerp #${idA}`, type: "inventaris", story: "" };
-                    if (!isNaN(idB) && !knownItems[idB]) knownItems[idB] = { name: naamB || `Voorwerp #${idB}`, type: "inventaris", story: "" };
+
+                    if (!isNaN(idA) && !isNaN(idB)) {
+                        combinations[`${idA}_${idB}`] = { resId, resName: resNaam, story: storyText, hint: hintText };
+                        combinations[`${idB}_${idA}`] = { resId, resName: resNaam, story: storyText, hint: hintText };
+                    }
+                    
+                    if (!isNaN(idA)) {
+                        if (!knownItems[idA]) knownItems[idA] = { name: naamA || `Voorwerp #${idA}`, type: "inventaris", story: "", hint: "" };
+                        knownItems[idA].isCombinable = true;
+                    }
+                    if (!isNaN(idB)) {
+                        if (!knownItems[idB]) knownItems[idB] = { name: naamB || `Voorwerp #${idB}`, type: "inventaris", story: "", hint: "" };
+                        knownItems[idB].isCombinable = true;
+                    }
                 } else if (!isNaN(idA) && naamA) {
                     if (!knownItems[idA]) {
-                        knownItems[idA] = { name: naamA, type: typeInfo, story: story };
+                        knownItems[idA] = { name: naamA, type: typeInfo, story: storyText, hint: hintText };
                     } else {
                         if (typeInfo && typeInfo !== "inventaris") knownItems[idA].type = typeInfo;
-                        if (story) knownItems[idA].story = story;
+                        if (storyText) knownItems[idA].story = storyText;
+                        if (hintText) knownItems[idA].hint = hintText;
                     }
                 }
             });
@@ -761,9 +785,6 @@
         }
     </script>
 
-    <!-- ============================================================
-         AUDIO
-         ============================================================ -->
     <script>
         let audioCtx = null;
         let musicMuted = (localStorage.getItem('kraak_muted') === '1');

@@ -107,19 +107,14 @@
         }
         .escape-screen.active { display: flex !important; }
         .escape-text {
-            font-family: 'Bebas Neue', sans-serif;
-            color: #000;
-            font-size: 3.5rem;
-            line-height: 1.2;
-            text-shadow: 0 0 20px rgba(255,255,255,0.6);
-            letter-spacing: 0.05em;
+            font-family: 'Bebas Neue', sans-serif; color: #000; font-size: 3.5rem; line-height: 1.2;
+            text-shadow: 0 0 20px rgba(255,255,255,0.6); letter-spacing: 0.05em;
         }
 
         /* --- CONTENT & SCHERMEN --- */
         .content-wrapper { 
             flex: 1; width: 100%; max-width: 500px; margin: 0 auto; 
-            padding: 12px 16px 16px; 
-            position: relative; z-index: 1; 
+            padding: 12px 16px 16px; position: relative; z-index: 1; 
         }
         
         .screen { display: none; flex-direction: column; align-items: center; width: 100%; text-align: center; }
@@ -260,6 +255,7 @@
     <!-- VICTORY / ESCAPE SCREEN (Verborgen tot de finale) -->
     <div id="escape-screen" class="escape-screen">
         <h1 id="escape-text" class="escape-text">Snel! Pak één goudstaaf (met jouw team naam) en breng deze naar de professor!</h1>
+        <button onclick="showProfessorScreen()" style="background: #111; color: #fff; font-size: 1.5rem; padding: 16px 32px; border: 2px solid #fff; border-radius: 8px; margin-top: 40px; box-shadow: 0 0 20px rgba(255,255,255,0.5);">Overval gelukt!</button>
     </div>
 
     <!-- GLOBALE HEADER -->
@@ -300,6 +296,32 @@
             <button onclick="startGame()">Start Missie</button>
         </div>
 
+        <!-- PROFESSOR WACHTSCHERM -->
+        <div id="professor-screen" class="screen" style="position: relative;">
+            <!-- Onzichtbare knop bovenaan het scherm voor de spelleider -->
+            <div id="hidden-approval-btn" onclick="showApprovalModal()" style="position: absolute; top: -12px; left: -16px; width: calc(100% + 32px); height: 80px; z-index: 9999; cursor: pointer;"></div>
+            
+            <div style="margin-top: 60px;"></div>
+            <svg class="mask-icon hero"><use href="#svg-dali"/></svg>
+            <h2 class="brand-title" style="font-size: 2.5rem;">Wachten op<br>de Professor</h2>
+            <p class="brand-sub" style="font-size: 1.2rem; margin-top: 20px;">Als de professor jullie overval heeft goedgekeurd, ben je klaar.</p>
+        </div>
+
+        <!-- FEESTELIJK EINDSCHERM -->
+        <div id="victory-screen" class="screen">
+            <div style="margin-top: 20px;"></div>
+            <h2 class="brand-title" style="color: #c9a034; font-size: 3rem; text-shadow: 0 0 30px rgba(201,160,52,0.8);">GEFELICITEERD!</h2>
+            <h3 style="color: #ece3d2; font-size: 1.8rem; margin-bottom: 30px; font-family: 'Oswald', sans-serif;">De Kraak is Geslaagd!</h3>
+            
+            <div class="card" style="text-align: center; border-color: var(--primary);">
+                <p style="font-size: 1.2rem; color: var(--muted); margin-bottom: 8px;">Totale Ontsnappingstijd:</p>
+                <div class="time" id="victory-time" style="font-size: 2.5rem; display: inline-block; position: relative; left: 0; transform: none; margin-bottom: 24px;">00:00</div>
+                
+                <p style="font-size: 1.2rem; color: var(--muted); margin-bottom: 8px;">Levens Over:</p>
+                <div id="victory-lives" style="font-size: 2rem;">❤️❤️❤️</div>
+            </div>
+        </div>
+
         <!-- Hoofdscherm (Inventaris & Doelen) -->
         <div id="main-screen" class="screen">
             <button onclick="openScanner()">⌕ Scan nieuwe QR-code</button>
@@ -313,7 +335,7 @@
                 <ul id="inventory-list"></ul>
             </div>
 
-            <!-- Nieuw: Behaalde Doelen (Verborgen tot er minstens 1 doel is gehaald) -->
+            <!-- Behaalde Doelen -->
             <div id="goals-card" class="card" style="display: none; border-left-color: var(--primary);">
                 <div class="stamp" style="color: var(--primary); border-color: var(--primary);">Doelwitten</div>
                 <h3>Behaalde Doelen (<span id="goals-counter">0/4</span>)</h3>
@@ -372,7 +394,17 @@
         </div>
     </div>
 
-    <!-- STICKY FOOTER -->
+    <!-- SPELLEIDER GOEDKEURING MODAL -->
+    <div id="approval-modal" class="modal">
+        <div class="modal-content" style="text-align: center; border-top-color: var(--resistance);">
+            <h3 style="color: var(--primary); font-size: 2rem;">Goedgekeurd?</h3>
+            <p style="font-size: 1.1rem; color: var(--text);">Heeft de professor de goudstaaf en de overval officieel goedgekeurd?</p>
+            <button onclick="approveEscape()" style="margin-top: 10px;">Ja, Voltooi Spel!</button>
+            <button class="secondary" onclick="closeApprovalModal()">Nee, Annuleren</button>
+        </div>
+    </div>
+
+    <!-- STICKY FOOTER MET GELUIDSKNOP -->
     <div class="version-footer">
         <button class="mute-btn" id="mute-btn" onclick="toggleMute()" title="Geluid aan/uit" type="button">
             <svg id="mute-icon-on" viewBox="0 0 24 24" fill="none" stroke="#c9a034" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 8 9 13 4 13 20 8 15 3 15 3 9" fill="#c9a034"/><path d="M16 8a5 5 0 0 1 0 8"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
@@ -380,7 +412,7 @@
         </button>
         <div class="footer-text">
             De Kraak van de Eeuw<br>
-            <span style="color:var(--primary-dim);">Engine Versie 2.9</span>
+            <span style="color:var(--primary-dim);">Engine Versie 3.0</span>
         </div>
     </div>
 
@@ -388,8 +420,6 @@
         // --- INSTELLINGEN ---
         const SHEET_ID = '1559c0QnlkTWafVqvRhixHXww-bCs6mSvh10BIVDGXVU';
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbysNb1du-ujs-hKVCwxbKlUYa31sPA8NKPZKUxvxtrr-FH01nZEY7EdW2Y03XyxPPT6/exec";
-        
-        // De 4 hoofddoelen die het team moet behalen
         const GOAL_IDS = [227, 229, 232, 235];
 
         let knownItems = {}; 
@@ -401,6 +431,7 @@
         let penaltyMinutes = 0;
         let lives = 3; 
         let html5QrcodeScanner = null;
+        let gameFinished = false; // Voorkomt dat de timer blijft tikken als het spel klaar is
 
         window.onload = () => {
             fetchGameData();
@@ -413,7 +444,9 @@
         }
 
         // --- DATABASE SYNC LOGICA ---
-        function calculateTeamStatus() {
+        function calculateTeamStatus(forceSuccess = false) {
+            if (forceSuccess) return "OVERVAL GESLAAGD!";
+
             const ontbrekendeNamen = GOAL_IDS
                 .filter(id => !inventory.find(i => i.id === id))
                 .map(id => (knownItems[id] && knownItems[id].name) ? knownItems[id].name : `Item #${id}`);
@@ -425,7 +458,7 @@
             }
         }
 
-        function syncToDatabase() {
+        function syncToDatabase(forceSuccess = false) {
             if(!WEB_APP_URL || !teamName) return; 
 
             const elapsedMs = Date.now() - startTime;
@@ -442,7 +475,7 @@
                     timeFormatted: `${m}:${s}`,
                     penalty: penaltyMinutes,
                     lives: lives,
-                    status: calculateTeamStatus(),
+                    status: calculateTeamStatus(forceSuccess),
                     inventory: inventory
                 })
             }).catch(e => console.log("Achtergrondsync mislukt:", e));
@@ -495,6 +528,7 @@
             startTime = Date.now();
             penaltyMinutes = 0;
             lives = 3;
+            gameFinished = false;
             inventory = [];
             saveLocalState();
             syncToDatabase();
@@ -503,6 +537,7 @@
         }
 
         function loseLife() {
+            if (gameFinished) return; // Geen levens meer verliezen na winst
             if(confirm("Heeft de Infiltrant jullie betrapt? Tik op OK om een leven in te leveren.")) {
                 lives--;
                 playSfx('error');
@@ -522,25 +557,64 @@
             }
         }
 
-        // --- ESCAPE SEQUENCE ---
+        // --- ESCAPE SEQUENCE & FINALE ---
         function triggerEscapeSequence() {
-            // Verberg alle reguliere UI elementen
             document.getElementById('global-header').style.display = 'none';
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             
-            // Toon de rode pulserende finale
             const escScreen = document.getElementById('escape-screen');
             escScreen.classList.add('active');
             
-            // Stel de tekst in inclusief teamnaam
             document.getElementById('escape-text').innerText = `Snel! Pak één goudstaaf (met codenaam: ${teamName}) en breng deze naar de professor!`;
             
-            // Verander muziek naar de snelle uptempo ontsnapping track (Run Amok)
+            // Zet een epische actietrack op als muziek! 
+            // (Vervang deze URL gerust door Bella Ciao als je die op een eigen server hebt staan)
             if (bgMusicEl) {
                 bgMusicEl.pause();
-                bgMusicEl.src = "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Run%20Amok.mp3";
+                bgMusicEl.src = "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Volatile%20Reaction.mp3";
                 bgMusicEl.play().catch(()=>{});
             }
+        }
+
+        function showProfessorScreen() {
+            document.getElementById('escape-screen').classList.remove('active');
+            showScreen('professor-screen');
+        }
+
+        function showApprovalModal() {
+            document.getElementById('approval-modal').classList.add('active');
+        }
+
+        function closeApprovalModal() {
+            document.getElementById('approval-modal').classList.remove('active');
+        }
+
+        function approveEscape() {
+            gameFinished = true;
+            closeApprovalModal();
+            
+            // Bereken de definitieve eindtijd
+            const elapsedMs = Date.now() - startTime;
+            const totalSeconds = Math.floor(elapsedMs / 1000) + (penaltyMinutes * 60);
+            const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+            const s = (totalSeconds % 60).toString().padStart(2, '0');
+            
+            // Zet gegevens in het overwinningsscherm
+            document.getElementById('victory-time').innerText = `${m}:${s}`;
+            const heartsStr = '❤️'.repeat(lives) + '🖤'.repeat(3 - lives);
+            document.getElementById('victory-lives').innerText = heartsStr;
+
+            // Feestelijke of opgeluchte muziek
+            if (bgMusicEl) {
+                bgMusicEl.pause();
+                bgMusicEl.src = "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Feelin%20Good.mp3";
+                bgMusicEl.play().catch(()=>{});
+            }
+
+            // Sync finale status naar Sheet
+            syncToDatabase(true); 
+            
+            showScreen('victory-screen');
         }
 
         function openScanner() {
@@ -581,9 +655,9 @@
                     if (ontbrekendeNamen.length > 0) {
                         alert(`Waarschuwing! Jullie missen nog doelen, maar het lukt nog net om in te breken.\n\nNog niet verzameld: ${ontbrekendeNamen.join(', ')}`);
                     } else {
-                        // ALLE DOELEN BEHAALD EN RODE KNOP GESCAND
+                        // RODE KNOP + ALLE DOELEN BEHAALD = FINALE!
                         triggerEscapeSequence();
-                        return; // Stop verdere uitvoer
+                        return; 
                     }
                 } else if (inventory.find(i => i.id === scannedId)) {
                     alert("Dit heb je al in je bezit!");
@@ -601,17 +675,13 @@
                     
                     document.getElementById('story-title').innerText = `Gevonden: ${itemData.name}`;
                     
-                    // SLIMME TEKSTLOGICA VOOR HET SCANNEN
                     let stText = "";
                     if (isCombinable) {
-                        // Is het een combineerbaar stukje, toon dan ALLEEN de hint.
                         stText = itemData.hint || "Dit voorwerp kan gecombineerd worden. Er is geen extra hint beschikbaar.";
                     } else {
-                        // Is het een eindvoorwerp, toon het complete verhaal.
                         stText = itemData.story || "Jullie hebben dit voorwerp veiliggesteld.";
                     }
                     
-                    // Pure Hints krijgen een aparte melding
                     if (isHint) {
                         stText = itemData.story || itemData.hint || "";
                         stText += "\n\n(Dit item is toegevoegd aan jullie Hints-logboek)";
@@ -632,7 +702,6 @@
             sel1.innerHTML = '<option value="">Kies Voorwerp 1</option>';
             sel2.innerHTML = '<option value="">Kies Voorwerp 2</option>';
             
-            // Toon alleen niet-hints in de combineerlijsten
             inventory.forEach(item => {
                 const itemData = knownItems[item.id] || { type: 'inventaris' };
                 if (!itemData.type.includes('hint')) {
@@ -681,7 +750,6 @@
             if (!itemData) return;
             document.getElementById('modal-title').innerText = itemData.name;
             
-            // SLIMME TEKSTLOGICA VOOR HET MODAL (INVENTARIS BEKIJKEN)
             let modalText = "";
             if (itemData.isCombinable) {
                 modalText = itemData.hint || "Dit voorwerp is te combineren. Er is geen verdere hint beschikbaar.";
@@ -714,16 +782,14 @@
         }
 
         function showScreen(id) {
-            // Check of the escape mode active is. If so, block regular navigation.
-            if (document.getElementById('escape-screen').classList.contains('active')) {
-                return;
-            }
+            // Blokkeer reguliere navigatie als de escape screens of victory screens actief zijn
+            if (document.getElementById('escape-screen').classList.contains('active')) return;
 
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             
             const globalHeader = document.getElementById('global-header');
-            if (id === 'login-screen' || id === 'loading-screen') {
+            if (id === 'login-screen' || id === 'loading-screen' || id === 'victory-screen') {
                 globalHeader.style.display = 'none';
             } else {
                 globalHeader.style.display = 'flex'; 
@@ -760,7 +826,6 @@
                             ${itemData.story ? `<p style="margin:0; font-size:14px; line-height:1.4; white-space:pre-line;">${itemData.story}</p>` : ''}
                         </div>`;
                 } else if (isGoal) {
-                    // Doelen verplaatsen we naar hun eigen visuele lijst
                     goalCount++;
                     goalsList.innerHTML += `
                         <li onclick="showItemModal(${item.id})">
@@ -785,7 +850,6 @@
                 hintsBtn.style.display = 'none';
             }
 
-            // Beheer de weergave van het doelen-vak
             if(goalCount > 0) {
                 goalsCard.style.display = 'block';
                 document.getElementById('goals-counter').innerText = `${goalCount}/4`;
@@ -800,7 +864,8 @@
         }
 
         function updateTimerUI() {
-            if(!startTime) return;
+            // Als het spel gefinished is, mag de timer niet meer optellen
+            if(!startTime || gameFinished) return;
             const elapsedMs = Date.now() - startTime;
             const totalSeconds = Math.floor(elapsedMs / 1000) + (penaltyMinutes * 60);
             const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
@@ -808,7 +873,7 @@
             document.getElementById('time-display').innerText = `${m}:${s}`;
         }
 
-        // --- VERNIEUWDE CSV PARSER ---
+        // --- CSV PARSER ---
         function parseGameData(csvText) {
             let lines = [];
             let row = [""];
@@ -846,11 +911,10 @@
                 let resId = parseInt(cleanCols[6 + offset]);
                 let resNaam = cleanCols[7 + offset];
                 
-                let storyText = cleanCols[8 + offset]; // Kolom I
-                let hintText = cleanCols[9 + offset];  // Kolom J
+                let storyText = cleanCols[8 + offset]; 
+                let hintText = cleanCols[9 + offset];  
                 let typeInfo = cleanCols[10 + offset] ? cleanCols[10 + offset].toLowerCase().trim() : "inventaris";
 
-                // Registreer Item A met hint en verhaal
                 if (!isNaN(idA)) {
                     if (!knownItems[idA]) {
                         knownItems[idA] = { name: naamA || `Voorwerp #${idA}`, type: typeInfo, story: storyText, hint: hintText, isCombinable: false };
@@ -862,14 +926,12 @@
                     }
                 }
 
-                // Registreer Item B placeholder
                 if (!isNaN(idB)) {
                     if (!knownItems[idB]) {
                         knownItems[idB] = { name: naamB || `Voorwerp #${idB}`, type: "inventaris", story: "", hint: "", isCombinable: false };
                     }
                 }
 
-                // Resultaat item (Item C)
                 if (!isNaN(resId) && resNaam) {
                     if (!knownItems[resId]) {
                         knownItems[resId] = { name: resNaam, type: typeInfo, story: storyText, hint: hintText, isCombinable: false };
@@ -880,7 +942,6 @@
                         if (hintText) knownItems[resId].hint = hintText;
                     }
 
-                    // Zet combinaties klaar en markeer A en B definitief als combinable
                     if (!isNaN(idA) && !isNaN(idB)) {
                         combinations[`${idA}_${idB}`] = { resId, resName: resNaam, story: storyText, hint: hintText };
                         combinations[`${idB}_${idA}`] = { resId, resName: resNaam, story: storyText, hint: hintText };

@@ -303,8 +303,8 @@
             
             <div style="margin-top: 60px;"></div>
             <svg class="mask-icon hero"><use href="#svg-dali"/></svg>
-            <h2 class="brand-title" style="font-size: 2.5rem;">Wachten op<br>de Professor</h2>
-            <p class="brand-sub" style="font-size: 1.2rem; margin-top: 20px;">Als de professor jullie overval heeft goedgekeurd, ben je klaar.</p>
+            <h2 class="brand-title" style="font-size: 2.5rem;">Vind<br>de Professor of Berlin en breng hem de goudstaaf</h2>
+            <p class="brand-sub" style="font-size: 1.2rem; margin-top: 20px;">Als de professor of Berlin jullie overval heeft goedgekeurd, ben je klaar met je missie.</p>
         </div>
 
         <!-- FEESTELIJK EINDSCHERM -->
@@ -330,7 +330,7 @@
 
             <!-- Basis Inventaris -->
             <div class="card">
-                <div class="stamp">Bewijsstukken</div>
+                <div class="stamp">Voorwerpen</div>
                 <h3>Jullie Inventaris</h3>
                 <ul id="inventory-list"></ul>
             </div>
@@ -398,7 +398,7 @@
     <div id="approval-modal" class="modal">
         <div class="modal-content" style="text-align: center; border-top-color: var(--resistance);">
             <h3 style="color: var(--primary); font-size: 2rem;">Goedgekeurd?</h3>
-            <p style="font-size: 1.1rem; color: var(--text);">Heeft de professor de goudstaaf en de overval officieel goedgekeurd?</p>
+            <p style="font-size: 1.1rem; color: var(--text);">Heeft de professor of berlin de goudstaaf en de overval officieel goedgekeurd?</p>
             <button onclick="approveEscape()" style="margin-top: 10px;">Ja, Voltooi Spel!</button>
             <button class="secondary" onclick="closeApprovalModal()">Nee, Annuleren</button>
         </div>
@@ -538,12 +538,12 @@
 
         function loseLife() {
             if (gameFinished) return; // Geen levens meer verliezen na winst
-            if(confirm("Heeft de Infiltrant jullie betrapt? Tik op OK om een leven in te leveren.")) {
+            if(confirm("Heeft de bewaker jullie betrapt? Bewaker, tik op OK om een leven in te leveren.")) {
                 lives--;
                 playSfx('error');
                 
                 if (lives <= 0) {
-                    alert("⚠️ JULLIE ZIJN GEARRESTEERD! ⚠️\n\nAlle bewijsstukken in jullie inventaris zijn in beslag genomen! Jullie zullen deze opnieuw moeten verzamelen. De gevonden hints blijven wel bewaard in jullie notitieblokje.");
+                    alert("⚠️ JULLIE ZIJN GEARRESTEERD! ⚠️\n\nAlle voorwerpen in jullie inventaris zijn in beslag genomen! Jullie zullen deze opnieuw moeten verzamelen. De gevonden hints blijven wel bewaard in jullie notitieblokje.");
                     inventory = inventory.filter(item => {
                         const itemData = knownItems[item.id] || { type: 'inventaris' };
                         return itemData.type.includes('hint');
@@ -565,13 +565,13 @@
             const escScreen = document.getElementById('escape-screen');
             escScreen.classList.add('active');
             
-            document.getElementById('escape-text').innerText = `Snel! Pak één goudstaaf (met codenaam: ${teamName}) en breng deze naar de professor!`;
+            document.getElementById('escape-text').innerText = `(met codenaam: ${teamName}) In de bewakersruimte hangt een walkie-talkie. Neem daar contact op met Berlin. Zeg "Buen día Señor Berlin" en je zult het laatste cijfer van de code ontvangen.`;
             
             // Zet een epische actietrack op als muziek! 
             // (Vervang deze URL gerust door Bella Ciao als je die op een eigen server hebt staan)
             if (bgMusicEl) {
                 bgMusicEl.pause();
-                bgMusicEl.src = "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Volatile%20Reaction.mp3";
+                bgMusicEl.src = "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Volatile%20Reaction.mp3"; //backup - https://incompetech.com/music/royalty-free/mp3-royaltyfree/Volatile%20Reaction.mp3
                 bgMusicEl.play().catch(()=>{});
             }
         }
@@ -607,7 +607,7 @@
             // Feestelijke of opgeluchte muziek
             if (bgMusicEl) {
                 bgMusicEl.pause();
-                bgMusicEl.src = "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Feelin%20Good.mp3";
+                bgMusicEl.src = "https://kamptwee.nl/kraak/ciao.mp3"; //backup - https://incompetech.com/music/royalty-free/mp3-royaltyfree/Volatile%20Reaction.mp3
                 bgMusicEl.play().catch(()=>{});
             }
 
@@ -653,7 +653,7 @@
                         .map(id => (knownItems[id] && knownItems[id].name) ? knownItems[id].name : `Voorwerp #${id}`);
 
                     if (ontbrekendeNamen.length > 0) {
-                        alert(`Waarschuwing! Jullie missen nog doelen, maar het lukt nog net om in te breken.\n\nNog niet verzameld: ${ontbrekendeNamen.join(', ')}`);
+                        alert(`Waarschuwing! Jullie missen nog doelen. Je kunt nog niet in breken in de kluis.\n\nNog niet verzameld: ${ontbrekendeNamen.join(', ')}`);
                     } else {
                         // RODE KNOP + ALLE DOELEN BEHAALD = FINALE!
                         triggerEscapeSequence();
